@@ -79,7 +79,7 @@ def move_sand(y, x, roi, newGrid):
         # If can fall straight down
         if roi[2, 1] == 0:
             for i in range(newY, y, -1):
-                if i < CELLS_Y - 1 and newGrid[i, x] == 0:
+                if i < CELLS_Y and newGrid[i, x] == 0:
                     newGrid[i, x] = newGrid[y, x]
                     newGrid[y, x] = 0
                     velocityGrid[i, x] = velocityGrid[y, x]
@@ -138,7 +138,7 @@ titleRect = title.get_rect()
 titleRect.center = (TEXT_CENTRE, 50)
 screen.blit(title, titleRect)
 
-grid[(CELLS_Y//2)-5:(CELLS_Y//2)+5, 40:60] = 1
+grid[(CELLS_Y//2)-5:(CELLS_Y//2)+5, 80:95] = 1
 grid[(CELLS_Y//2)-40:(CELLS_Y//2)-30, 40:60] = 1
 
 
