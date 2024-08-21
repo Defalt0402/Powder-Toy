@@ -21,7 +21,7 @@ velocityGrid = np.zeros((CELLS_Y, CELLS_X, 2))
 colourGrid = np.zeros((CELLS_Y, CELLS_X), dtype=object)
 
 # Physics constants
-GRAVITY = 0.2
+GRAVITY = 0.7
 TERMINAL_VELOCITY = 3
 
 # Dictionary to hold colour values
