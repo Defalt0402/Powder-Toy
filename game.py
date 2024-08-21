@@ -17,10 +17,19 @@ FPS = 30
 grid = np.zeros((CELLS_Y, CELLS_X))
 # Grid to store velocity, with components (y, x)
 velocityGrid = np.zeros((CELLS_Y, CELLS_X, 2))
+# Grid to store colours in use
+colourGrid = np.zeros((CELLS_Y, CELLS_X), dtype=object)
 
 # Physics constants
 GRAVITY = 0.2
 TERMINAL_VELOCITY = 3
+
+# Dictionary to hold colour values
+colours = {
+    "0": [(0, 0, 0)],
+    # Sand
+    "1": [(114, 117, 30), (156, 113, 28), (181, 128, 22), (153, 126, 20), (140, 114, 13)]
+           }
 
 # Perform initialisation for pygame
 pygame.init()
@@ -46,22 +55,26 @@ def draw_grid():
             y = i * RESOLUTION
 
             # Set colour if coloured flag is True
-            colour = get_cell_colour(j, i)
+            if colourGrid[i, j] == 0 and grid[i, j] != 0:
+                colour = get_cell_colour(j, i)
+            elif colourGrid[i, j] != 0:
+                colour = colourGrid[i, j]
 
             if grid[i, j] == 1:
                 # Draw at x and y + 1 with Resolution - 2 in order to not hide the grid lines
                 pygame.draw.rect(screen, colour, (x, y, RESOLUTION, RESOLUTION))
+                colourGrid[i, j] = colour
             else:
                 pygame.draw.rect(screen, (0, 0, 0) , (x, y, RESOLUTION, RESOLUTION))
 
 # Determine cell colour
 def get_cell_colour(x, y):
     # Just return sand colour for now
-    return (114, 117, 30)
+    return random.choice(colours[str(int(grid[y, x]))])
 
 # Used to move any oject that moves like sand
 def move_sand(y, x, roi, newGrid):
-    global velocityGrid
+    global velocityGrid, colourGrid
 
     if np.array_equal(roi[2], [1, 1, 1]):
         velocityGrid[y, x, 0] = 0
@@ -88,6 +101,8 @@ def move_sand(y, x, roi, newGrid):
                     newGrid[y, x] = 0
                     velocityGrid[i, x] = velocityGrid[y, x]
                     velocityGrid[y, x] = 0
+                    colourGrid[i, x] = colourGrid[y, x]
+                    colourGrid[y, x] = 0
                     break
         # If can fall left
         elif np.array_equal(roi[2], [0, 1, 1]) and x > 0:
@@ -95,12 +110,16 @@ def move_sand(y, x, roi, newGrid):
             newGrid[y, x] = 0
             velocityGrid[y+1, x-1] = velocityGrid[y, x]
             velocityGrid[y, x] = 0
+            colourGrid[y+1, x-1] = colourGrid[y, x]
+            colourGrid[y, x] = 0
         # If can fall right
         elif np.array_equal(roi[2], [1, 1, 0]) and x < CELLS_X - 1:
             newGrid[y+1, x+1] = newGrid[y, x]
             newGrid[y, x] = 0
             velocityGrid[y+1, x+1] = velocityGrid[y, x]
             velocityGrid[y, x] = 0
+            colourGrid[y+1, x+1] = colourGrid[y, x]
+            colourGrid[y, x] = 0
         # Stochastic movement if the sand can move either left or right
         elif np.array_equal(roi[2], [0, 1, 0]):
             # If can't move right, move left
@@ -109,12 +128,16 @@ def move_sand(y, x, roi, newGrid):
                 newGrid[y, x] = 0
                 velocityGrid[y+1, x-1] = velocityGrid[y, x]
                 velocityGrid[y, x] = 0
+                colourGrid[y+1, x-1] = colourGrid[y, x]
+                colourGrid[y, x] = 0
             # If can't move left, move right
             elif x == 0:
                 newGrid[y+1, x+1] = newGrid[y, x]
                 newGrid[y, x] = 0
                 velocityGrid[y+1, x+1] = velocityGrid[y, x]
                 velocityGrid[y, x] = 0
+                colourGrid[y+1, x+1] = colourGrid[y, x]
+                colourGrid[y, x] = 0
             # Otherwise, random direction
             else:
                 direction = random.randint(0, 1)
@@ -124,12 +147,16 @@ def move_sand(y, x, roi, newGrid):
                     newGrid[y, x] = 0
                     velocityGrid[y+1, x-1] = velocityGrid[y, x]
                     velocityGrid[y, x] = 0
+                    colourGrid[y+1, x-1] = colourGrid[y, x]
+                    colourGrid[y, x] = 0
                 # Move right
                 else:
                     newGrid[y+1, x+1] = newGrid[y, x]
                     newGrid[y, x] = 0
                     velocityGrid[y+1, x+1] = velocityGrid[y, x]
                     velocityGrid[y, x] = 0
+                    colourGrid[y+1, x+1] = colourGrid[y, x]
+                    colourGrid[y, x] = 0
 
 
     return newGrid
@@ -143,8 +170,7 @@ titleRect = title.get_rect()
 titleRect.center = (TEXT_CENTRE, 50)
 screen.blit(title, titleRect)
 
-grid[(CELLS_Y//2)-5:(CELLS_Y//2)+5, 80:95] = 1
-grid[(CELLS_Y//2)-40:(CELLS_Y//2)-30, 40:60] = 1
+grid[(CELLS_Y//2)-50:(CELLS_Y//2)-20, 0:30] = 1
 
 
 
