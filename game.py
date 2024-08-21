@@ -27,6 +27,7 @@ TERMINAL_VELOCITY = 3
 # Setup for mouse controls
 leftMouseHeld = False
 rightMouseHeld = False
+currentMaterial = 1
 
 # Dictionary to hold colour values
 colours = {
@@ -183,6 +184,8 @@ def handle_events():
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 return True  # Pause or unpause the game
+            elif event.key == pygame.K_c:
+                clear_grid()
             elif event.key == pygame.K_q:
                 running = False
                 pygame.quit()
@@ -203,6 +206,14 @@ def handle_events():
                 
     return False
 
+def clear_grid():
+    global grid, velocityGrid, colourGrid
+    grid.fill(0)
+    velocityGrid = np.zeros((CELLS_Y, CELLS_X, 2))
+    colourGrid.fill(0)
+
+    draw_grid()
+
 # Create menu title
 pygame.draw.line(screen, (255, 255, 255), (1000, 0), (1000, 1000), 2)
 title = fontLarge.render("Powder Toy", True, (255, 255, 255))
@@ -212,11 +223,9 @@ screen.blit(title, titleRect)
 
 grid[(CELLS_Y//2)-50:(CELLS_Y//2)-20, 0:30] = 1
 
-
-
 # Main game loop
 def game_loop():
-    global running, grid
+    global running, grid, currentMaterial
 
     # Tell user game is running
     draw_pause_message("Game is Running")
@@ -242,6 +251,29 @@ def game_loop():
 
         grid = newGrid
 
+        # Draw on grid if mouse is being held
+        if leftMouseHeld:
+            mouseX, mouseY = pygame.mouse.get_pos()
+            # If mouse is in bounds
+            if mouseX >= 0 and mouseX < GAMEWIDTH and mouseY >= 0 and mouseY < HEIGHT:
+                # Translate mouse position to corresponding grid position
+                cellX = mouseX // RESOLUTION
+                cellY = mouseY // RESOLUTION
+                grid[cellY, cellX] = currentMaterial
+
+        # erase from grid if mouse is being held
+        if rightMouseHeld:
+            mouseX, mouseY = pygame.mouse.get_pos()
+            # If mouse is in bounds
+            if mouseX >= 0 and mouseX < GAMEWIDTH and mouseY >= 0 and mouseY < HEIGHT:
+                cellX = mouseX // RESOLUTION
+                cellY = mouseY // RESOLUTION
+                grid[cellY, cellX] = 0
+                velocityGrid[cellY, cellX, 0] = 0
+                velocityGrid[cellY, cellX, 1] = 0
+                colourGrid[cellY, cellX] = 0
+
+
         draw_grid()
 
         pygame.display.flip()
@@ -258,6 +290,28 @@ def game_loop():
         if handle_events():
             running = True
             game_loop()
+
+        # Draw on grid if mouse is being held
+        if leftMouseHeld:
+            mouseX, mouseY = pygame.mouse.get_pos()
+            # If mouse is in bounds
+            if mouseX >= 0 and mouseX < GAMEWIDTH and mouseY >= 0 and mouseY < HEIGHT:
+                # Translate mouse position to corresponding grid position
+                cellX = mouseX // RESOLUTION
+                cellY = mouseY // RESOLUTION
+                grid[cellY, cellX] = currentMaterial
+
+        # erase from grid if mouse is being held
+        if rightMouseHeld:
+            mouseX, mouseY = pygame.mouse.get_pos()
+            # If mouse is in bounds
+            if mouseX >= 0 and mouseX < GAMEWIDTH and mouseY >= 0 and mouseY < HEIGHT:
+                cellX = mouseX // RESOLUTION
+                cellY = mouseY // RESOLUTION
+                grid[cellY, cellX] = 0
+                velocityGrid[cellY, cellX, 0] = 0
+                velocityGrid[cellY, cellX, 1] = 0
+                colourGrid[cellY, cellX] = 0
 
         draw_grid()
 
