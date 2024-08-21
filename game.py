@@ -24,6 +24,10 @@ colourGrid = np.zeros((CELLS_Y, CELLS_X), dtype=object)
 GRAVITY = 0.7
 TERMINAL_VELOCITY = 3
 
+# Setup for mouse controls
+leftMouseHeld = False
+rightMouseHeld = False
+
 # Dictionary to hold colour values
 colours = {
     "0": [(0, 0, 0)],
@@ -46,6 +50,7 @@ running = True
 
 # Create visible grid of 1px border around cells
 screen.fill("black")
+
 def draw_grid():
     global grid
     for i in range(CELLS_Y):
@@ -161,7 +166,42 @@ def move_sand(y, x, roi, newGrid):
 
     return newGrid
 
+def draw_pause_message(message):
+    pygame.draw.rect(screen, (0, 0, 0), (1010, 110, 1390, 150))
+    pauseText = fontMedium.render(message, True, (255, 255, 255))
+    pauseTextRect = pauseText.get_rect()
+    pauseTextRect.center = (1200, 150)
+    screen.blit(pauseText, pauseTextRect)
+    pygame.display.flip()
 
+def handle_events():
+    global running, leftMouseHeld, rightMouseHeld
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            pygame.quit()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                return True  # Pause or unpause the game
+            elif event.key == pygame.K_q:
+                running = False
+                pygame.quit()
+        
+        # Check for mouse button presses
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                leftMouseHeld = True
+            elif event.button == 3:
+                rightMouseHeld = True
+
+        # Check for mouse button releases
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                leftMouseHeld = False
+            elif event.button == 3:
+                rightMouseHeld = False
+                
+    return False
 
 # Create menu title
 pygame.draw.line(screen, (255, 255, 255), (1000, 0), (1000, 1000), 2)
@@ -175,54 +215,17 @@ grid[(CELLS_Y//2)-50:(CELLS_Y//2)-20, 0:30] = 1
 
 
 # Main game loop
-def game_loop(leftMouseHeld=None, rightMouseHeld=None):
+def game_loop():
     global running, grid
 
     # Tell user game is running
-    pygame.draw.rect(screen, (0, 0, 0) , (1010, 110, 1390, 150))
-    runningText = fontMedium.render("Game is Running", True, (255, 255, 255))
-    runningTextRect = runningText.get_rect()
-    runningTextRect.center = (1200, 150)
-    screen.blit(runningText, runningTextRect)
-
-     # Check if user is holding the mouse down
-    if leftMouseHeld == None:
-        # Create Flags used for drawing
-        leftMouseHeld = False
-        rightMouseHeld = False
+    draw_pause_message("Game is Running")
 
     # Basic game loop
     while running:
         # Polling key events
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-                pygame.quit()
-            
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    running = False
-                    break
-                elif event.key == pygame.K_q:
-                    running = False
-                    pygame.quit()
-            
-             # Check for mouse button presses
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    leftMouseHeld = True
-                elif event.button == 3:
-                    rightMouseHeld = True
-
-            # Check for mouse button releases
-            elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:  # Left mouse button
-                    leftMouseHeld = False
-                elif event.button == 3:
-                    rightMouseHeld = False
-
-        # Pause game
-        if running == False:
+        if handle_events():
+            running = False
             break
 
         # Update all cells
@@ -249,42 +252,12 @@ def game_loop(leftMouseHeld=None, rightMouseHeld=None):
     while not running:
 
         # Tell user game is paused
-        pygame.draw.rect(screen, (0, 0, 0) , (1010, 110, 1390, 150))
-        runningText = fontMedium.render("Game is Paused", True, (255, 255, 255))
-        runningTextRect = runningText.get_rect()
-        runningTextRect.center = (1200, 150)
-        screen.blit(runningText, runningTextRect)
+        draw_pause_message("Game is Paused")
 
         # Polling key events
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-                pygame.quit()
-            
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    running = True
-                    break
-                elif event.key == pygame.K_q:
-                    running = False
-                    pygame.quit()
-            
-             # Check for mouse button presses
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    leftMouseHeld = True
-                elif event.button == 3:
-                    rightMouseHeld = True
-
-            # Check for mouse button releases
-            elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:  # Left mouse button
-                    leftMouseHeld = False
-                elif event.button == 3:
-                    rightMouseHeld = False
-        
-        if running == True:
-            game_loop(leftMouseHeld, rightMouseHeld)
+        if handle_events():
+            running = True
+            game_loop()
 
         draw_grid()
 
