@@ -31,9 +31,8 @@ running = True
 
 # Create visible grid of 1px border around cells
 screen.fill("black")
-
 def draw_grid():
-    global grid, coloured
+    global grid
     for i in range(CELLS_Y):
         for j in range(CELLS_X):
             # Actual positions of the visible grid square
@@ -49,12 +48,23 @@ def draw_grid():
             else:
                 pygame.draw.rect(screen, (0, 0, 0) , (x+1, y+1, RESOLUTION-2, RESOLUTION-2))
 
+# Determine cell colour
 def get_cell_colour(x, y):
-    r = (x * 255) // CELLS_X
-    g = (y * 255) // CELLS_Y
-    b = 255 - r
+    # Just return sand colour for now
+    return (114, 117, 30)
 
-    return (r, g, b)
+# Used to move any oject that moves like sand
+def move_sand(y, x, roi, newGrid):
+    if y < CELLS_Y - 1:
+        if roi[2, 1] == 0:
+            print(newGrid[y, x])
+            print(newGrid[y+1, x])
+            newGrid[y+1, x] = newGrid[y, x]
+            newGrid[y, x] = 0
+
+    return newGrid
+
+
 
 # Create menu title
 pygame.draw.line(screen, (255, 255, 255), (1000, 0), (1000, 1000), 2)
@@ -62,6 +72,8 @@ title = fontLarge.render("Powder Toy", True, (255, 255, 255))
 titleRect = title.get_rect()
 titleRect.center = (TEXT_CENTRE, 50)
 screen.blit(title, titleRect)
+
+grid[CELLS_Y//2, CELLS_X//2] = 1
 
 # Main game loop
 def game_loop(leftMouseHeld=None, rightMouseHeld=None):
@@ -113,6 +125,21 @@ def game_loop(leftMouseHeld=None, rightMouseHeld=None):
         # Pause game
         if running == False:
             break
+
+        # Update all cells
+        newGrid = np.copy(grid)
+        paddedGrid = np.pad(grid, pad_width=1, mode='constant', constant_values=0)
+        for i in range(1, CELLS_Y + 1):
+            for j in range(1, CELLS_X + 1):
+                # Get ROI, accounting for corners and edges
+                roi = paddedGrid[i-1:i+2, j-1:j+2]
+
+                # If sand
+                if roi[1, 1] == 1:
+                    print(roi)
+                    newGrid = move_sand(i-1, j-1, roi, newGrid)
+
+        grid = newGrid
 
         draw_grid()
 
