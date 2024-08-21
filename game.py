@@ -19,8 +19,8 @@ grid = np.zeros((CELLS_Y, CELLS_X))
 velocityGrid = np.zeros((CELLS_Y, CELLS_X, 2))
 
 # Physics constants
-GRAVITY = 0.3
-TERMINAL_VELOCITY = 5
+GRAVITY = 0.2
+TERMINAL_VELOCITY = 3
 
 # Perform initialisation for pygame
 pygame.init()
@@ -139,6 +139,7 @@ titleRect.center = (TEXT_CENTRE, 50)
 screen.blit(title, titleRect)
 
 grid[(CELLS_Y//2)-5:(CELLS_Y//2)+5, 40:60] = 1
+grid[(CELLS_Y//2)-40:(CELLS_Y//2)-30, 40:60] = 1
 
 
 
