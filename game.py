@@ -15,6 +15,12 @@ FPS = 30
 
 # Create grid to store game
 grid = np.zeros((CELLS_Y, CELLS_X))
+# Grid to store velocity, with components (y, x)
+velocityGrid = np.zeros((CELLS_Y, CELLS_X, 2))
+
+# Physics constants
+GRAVITY = 0.3
+TERMINAL_VELOCITY = 5
 
 # Perform initialisation for pygame
 pygame.init()
@@ -55,29 +61,56 @@ def get_cell_colour(x, y):
 
 # Used to move any oject that moves like sand
 def move_sand(y, x, roi, newGrid):
+    global velocityGrid
+
+    # Update velocity(accellerate)
+    velocityGrid[y, x, 0] += GRAVITY
+
+    # Conform to terminal velocity
+    if velocityGrid[y, x, 0] > TERMINAL_VELOCITY:
+        velocityGrid[y, x, 0] = TERMINAL_VELOCITY
+
+    newY = y + int(velocityGrid[y, x, 0])
+
+    if newY >= CELLS_Y:
+        newY = CELLS_Y - 1
+
     if y < CELLS_Y - 1:
         # If can fall straight down
         if roi[2, 1] == 0:
-            newGrid[y+1, x] = newGrid[y, x]
-            newGrid[y, x] = 0
+            for i in range(newY, y, -1):
+                if i < CELLS_Y - 1 and newGrid[i, x] == 0:
+                    newGrid[i, x] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                    velocityGrid[i, x] = velocityGrid[y, x]
+                    velocityGrid[y, x] = 0
+                    break
         # If can fall left
         elif np.array_equal(roi[2], [0, 1, 1]) and x > 0:
             newGrid[y+1, x-1] = newGrid[y, x]
             newGrid[y, x] = 0
+            velocityGrid[y+1, x-1] = velocityGrid[y, x]
+            velocityGrid[y, x] = 0
         # If can fall right
         elif np.array_equal(roi[2], [1, 1, 0]) and x < CELLS_X - 1:
             newGrid[y+1, x+1] = newGrid[y, x]
             newGrid[y, x] = 0
+            velocityGrid[y+1, x+1] = velocityGrid[y, x]
+            velocityGrid[y, x] = 0
         # Stochastic movement if the sand can move either left or right
         elif np.array_equal(roi[2], [0, 1, 0]):
-            # If can't move left, move right
-            if x == 0:
-                newGrid[y+1, x+1] = newGrid[y, x]
-                newGrid[y, x] = 0
             # If can't move right, move left
-            elif x == CELLS_X - 1:
+            if x == CELLS_X - 1:
                 newGrid[y+1, x-1] = newGrid[y, x]
                 newGrid[y, x] = 0
+                velocityGrid[y+1, x-1] = velocityGrid[y, x]
+                velocityGrid[y, x] = 0
+            # If can't move left, move right
+            elif x == 0:
+                newGrid[y+1, x+1] = newGrid[y, x]
+                newGrid[y, x] = 0
+                velocityGrid[y+1, x+1] = velocityGrid[y, x]
+                velocityGrid[y, x] = 0
             # Otherwise, random direction
             else:
                 direction = random.randint(0, 1)
@@ -85,9 +118,14 @@ def move_sand(y, x, roi, newGrid):
                 if direction == 0:
                     newGrid[y+1, x-1] = newGrid[y, x]
                     newGrid[y, x] = 0
+                    velocityGrid[y+1, x-1] = velocityGrid[y, x]
+                    velocityGrid[y, x] = 0
+                # Move right
                 else:
                     newGrid[y+1, x+1] = newGrid[y, x]
                     newGrid[y, x] = 0
+                    velocityGrid[y+1, x+1] = velocityGrid[y, x]
+                    velocityGrid[y, x] = 0
 
     return newGrid
 
@@ -100,7 +138,7 @@ titleRect = title.get_rect()
 titleRect.center = (TEXT_CENTRE, 50)
 screen.blit(title, titleRect)
 
-grid[(CELLS_Y//2)-5:(CELLS_Y//2)+5, 0:CELLS_X] = 1
+grid[(CELLS_Y//2)-5:(CELLS_Y//2)+5, 40:60] = 1
 
 
 
