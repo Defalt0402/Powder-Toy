@@ -25,7 +25,7 @@ fontMedium = pygame.font.SysFont(None, 40)
 fontSmall = pygame.font.SysFont(None, 29)
 # Set window attributes
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Conway's Game of Life")
+pygame.display.set_caption("Powder Toy")
 clock = pygame.time.Clock()
 running = True
 
