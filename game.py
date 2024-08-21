@@ -63,6 +63,10 @@ def get_cell_colour(x, y):
 def move_sand(y, x, roi, newGrid):
     global velocityGrid
 
+    if np.array_equal(roi[2], [1, 1, 1]):
+        velocityGrid[y, x, 0] = 0
+        return newGrid  
+
     # Update velocity(accellerate)
     velocityGrid[y, x, 0] += GRAVITY
 
@@ -126,6 +130,7 @@ def move_sand(y, x, roi, newGrid):
                     newGrid[y, x] = 0
                     velocityGrid[y+1, x+1] = velocityGrid[y, x]
                     velocityGrid[y, x] = 0
+
 
     return newGrid
 
