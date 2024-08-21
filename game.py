@@ -44,9 +44,9 @@ def draw_grid():
 
             if grid[i, j] == 1:
                 # Draw at x and y + 1 with Resolution - 2 in order to not hide the grid lines
-                pygame.draw.rect(screen, colour, (x+1, y+1, RESOLUTION-2, RESOLUTION-2))
+                pygame.draw.rect(screen, colour, (x, y, RESOLUTION, RESOLUTION))
             else:
-                pygame.draw.rect(screen, (0, 0, 0) , (x+1, y+1, RESOLUTION-2, RESOLUTION-2))
+                pygame.draw.rect(screen, (0, 0, 0) , (x, y, RESOLUTION, RESOLUTION))
 
 # Determine cell colour
 def get_cell_colour(x, y):
@@ -56,11 +56,38 @@ def get_cell_colour(x, y):
 # Used to move any oject that moves like sand
 def move_sand(y, x, roi, newGrid):
     if y < CELLS_Y - 1:
+        # If can fall straight down
         if roi[2, 1] == 0:
-            print(newGrid[y, x])
-            print(newGrid[y+1, x])
             newGrid[y+1, x] = newGrid[y, x]
             newGrid[y, x] = 0
+        # If can fall left
+        elif np.array_equal(roi[2], [0, 1, 1]) and x > 0:
+            newGrid[y+1, x-1] = newGrid[y, x]
+            newGrid[y, x] = 0
+        # If can fall right
+        elif np.array_equal(roi[2], [1, 1, 0]) and x < CELLS_X - 1:
+            newGrid[y+1, x+1] = newGrid[y, x]
+            newGrid[y, x] = 0
+        # Stochastic movement if the sand can move either left or right
+        elif np.array_equal(roi[2], [0, 1, 0]):
+            # If can't move left, move right
+            if x == 0:
+                newGrid[y+1, x+1] = newGrid[y, x]
+                newGrid[y, x] = 0
+            # If can't move right, move left
+            elif x == CELLS_X - 1:
+                newGrid[y+1, x-1] = newGrid[y, x]
+                newGrid[y, x] = 0
+            # Otherwise, random direction
+            else:
+                direction = random.randint(0, 1)
+                # Move left
+                if direction == 0:
+                    newGrid[y+1, x-1] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                else:
+                    newGrid[y+1, x+1] = newGrid[y, x]
+                    newGrid[y, x] = 0
 
     return newGrid
 
@@ -73,7 +100,9 @@ titleRect = title.get_rect()
 titleRect.center = (TEXT_CENTRE, 50)
 screen.blit(title, titleRect)
 
-grid[CELLS_Y//2, CELLS_X//2] = 1
+grid[(CELLS_Y//2)-5:(CELLS_Y//2)+5, 0:CELLS_X] = 1
+
+
 
 # Main game loop
 def game_loop(leftMouseHeld=None, rightMouseHeld=None):
@@ -136,7 +165,6 @@ def game_loop(leftMouseHeld=None, rightMouseHeld=None):
 
                 # If sand
                 if roi[1, 1] == 1:
-                    print(roi)
                     newGrid = move_sand(i-1, j-1, roi, newGrid)
 
         grid = newGrid
