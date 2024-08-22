@@ -3,320 +3,287 @@ import random
 import pygame
 import math
 
-# Set display settings
-GAMEWIDTH = 1000
-WIDTH = 1400
-HEIGHT = 1000
-RESOLUTION = 10
-CELLS_X = GAMEWIDTH // RESOLUTION
-CELLS_Y = HEIGHT // RESOLUTION
-TEXT_CENTRE = GAMEWIDTH + ((WIDTH - GAMEWIDTH) // 2)
-FPS = 30
+class PowderToy:
+    def __init__(self):
+        # Set display settings
+        self.GAMEWIDTH = 1000
+        self.WIDTH = 1400
+        self.HEIGHT = 1000
+        self.RESOLUTION = 10
+        self.CELLS_X = self.GAMEWIDTH // self.RESOLUTION
+        self.CELLS_Y = self.HEIGHT // self.RESOLUTION
+        self.TEXT_CENTRE = self.GAMEWIDTH + ((self.WIDTH - self.GAMEWIDTH) // 2)
+        self.FPS = 30
 
-# Create grid to store game
-grid = np.zeros((CELLS_Y, CELLS_X))
-# Grid to store velocity, with components (y, x)
-velocityGrid = np.zeros((CELLS_Y, CELLS_X, 2))
-# Grid to store colours in use
-colourGrid = np.zeros((CELLS_Y, CELLS_X), dtype=object)
+        # Create grid to store game
+        self.grid = np.zeros((self.CELLS_Y, self.CELLS_X))
+        # Grid to store velocity, with components (y, x)
+        self.velocityGrid = np.zeros((self.CELLS_Y, self.CELLS_X, 2))
+        # Grid to store colours in use
+        self.colourGrid = np.zeros((self.CELLS_Y, self.CELLS_X), dtype=object)
 
-# Physics constants
-GRAVITY = 0.7
-TERMINAL_VELOCITY = 3
+        # Physics constants
+        self.GRAVITY = 0.7
+        self.TERMINAL_VELOCITY = 3
 
-# Setup for mouse controls
-leftMouseHeld = False
-rightMouseHeld = False
-currentMaterial = 1
+        # Setup for mouse controls
+        self.leftMouseHeld = False
+        self.rightMouseHeld = False
+        self.currentMaterial = 1
 
-# Dictionary to hold colour values
-colours = {
-    "0": [(0, 0, 0)],
-    # Sand
-    "1": [(117, 108, 30), (156, 113, 28), (181, 128, 22), (153, 126, 20), (140, 114, 13)]
-           }
+        # Dictionary to hold colour values
+        self.colours = {
+            "0": [(0, 0, 0)],
+            # Sand
+            "1": [(117, 108, 30), (156, 113, 28), (181, 128, 22), (153, 126, 20), (140, 114, 13)]
+        }
 
-# Perform initialisation for pygame
-pygame.init()
-pygame.font.init()
-# Define 3 font sizes
-fontLarge = pygame.font.SysFont(None, 50)
-fontMedium = pygame.font.SysFont(None, 40)
-fontSmall = pygame.font.SysFont(None, 29)
-# Set window attributes
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Powder Toy")
-clock = pygame.time.Clock()
-running = True
+        # Perform initialisation for pygame
+        pygame.init()
+        pygame.font.init()
+        # Define 3 font sizes
+        self.fontLarge = pygame.font.SysFont(None, 50)
+        self.fontMedium = pygame.font.SysFont(None, 40)
+        self.fontSmall = pygame.font.SysFont(None, 29)
+        # Set window attributes
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        pygame.display.set_caption("Powder Toy")
+        self.clock = pygame.time.Clock()
+        self.running = True
 
-# Create visible grid of 1px border around cells
-screen.fill("black")
+        # Create visible grid of 1px border around cells
+        self.screen.fill("black")
 
-def draw_grid():
-    global grid
-    for i in range(CELLS_Y):
-        for j in range(CELLS_X):
-            # Actual positions of the visible grid square
-            x = j * RESOLUTION
-            y = i * RESOLUTION
+        # Create menu title
+        pygame.draw.line(self.screen, (255, 255, 255), (1000, 0), (1000, 1000), 2)
+        title = self.fontLarge.render("Powder Toy", True, (255, 255, 255))
+        titleRect = title.get_rect()
+        titleRect.center = (self.TEXT_CENTRE, 50)
+        self.screen.blit(title, titleRect)
 
-            # Set colour if coloured flag is True
-            if colourGrid[i, j] == 0 and grid[i, j] != 0:
-                colour = get_cell_colour(j, i)
-            elif colourGrid[i, j] != 0:
-                colour = colourGrid[i, j]
+        # Initialize grid with some sand
+        self.grid[(self.CELLS_Y // 2) - 50:(self.CELLS_Y // 2) - 20, 0:30] = 1
 
-            if grid[i, j] == 1:
-                # Draw at x and y + 1 with Resolution - 2 in order to not hide the grid lines
-                pygame.draw.rect(screen, colour, (x, y, RESOLUTION, RESOLUTION))
-                colourGrid[i, j] = colour
-            else:
-                pygame.draw.rect(screen, (0, 0, 0) , (x, y, RESOLUTION, RESOLUTION))
+    # Draws the grid
+    def draw_grid(self):
+        for i in range(self.CELLS_Y):
+            for j in range(self.CELLS_X):
+                # Actual positions of the visible grid square
+                x = j * self.RESOLUTION
+                y = i * self.RESOLUTION
 
-# Determine cell colour
-def get_cell_colour(x, y):
-    # Just return sand colour for now
-    return random.choice(colours[str(int(grid[y, x]))])
+                # Set colour if coloured flag is True
+                if self.colourGrid[i, j] == 0 and self.grid[i, j] != 0:
+                    colour = self.get_cell_colour(j, i)
+                elif self.colourGrid[i, j] != 0:
+                    colour = self.colourGrid[i, j]
 
-# Used to move any oject that moves like sand
-def move_sand(y, x, roi, newGrid):
-    global velocityGrid, colourGrid
+                if self.grid[i, j] == 1:
+                    # Draw at x and y + 1 with Resolution - 2 in order to not hide the grid lines
+                    pygame.draw.rect(self.screen, colour, (x, y, self.RESOLUTION, self.RESOLUTION))
+                    self.colourGrid[i, j] = colour
+                else:
+                    pygame.draw.rect(self.screen, (0, 0, 0), (x, y, self.RESOLUTION, self.RESOLUTION))
 
-    if np.array_equal(roi[2], [1, 1, 1]):
-        velocityGrid[y, x, 0] = 0
-        return newGrid  
+    # Gets the colour of the given cell
+    def get_cell_colour(self, x, y):
+        # Just return sand colour for now
+        return random.choice(self.colours[str(int(self.grid[y, x]))])
 
-    # Update velocity(accellerate)
-    velocityGrid[y, x, 0] += GRAVITY
+    # Used to move sand particles
+    def move_sand(self, y, x, roi, newGrid):
+        # If can't move
+        if np.array_equal(roi[2], [1, 1, 1]):
+            self.velocityGrid[y, x, 0] = 0
+            return newGrid  
 
-    # Conform to terminal velocity
-    if velocityGrid[y, x, 0] > TERMINAL_VELOCITY:
-        velocityGrid[y, x, 0] = TERMINAL_VELOCITY
+        # Update velocity (accelerate)
+        self.velocityGrid[y, x, 0] += self.GRAVITY
 
-    newY = y + int(velocityGrid[y, x, 0])
+        # Conform to terminal velocity
+        if self.velocityGrid[y, x, 0] > self.TERMINAL_VELOCITY:
+            self.velocityGrid[y, x, 0] = self.TERMINAL_VELOCITY
 
-    if newY >= CELLS_Y:
-        newY = CELLS_Y - 1
+        newY = y + int(self.velocityGrid[y, x, 0])
 
-    if y < CELLS_Y - 1:
+        if newY >= self.CELLS_Y:
+            newY = self.CELLS_Y - 1
+
         # If can fall straight down
-        if roi[2, 1] == 0:
-            for i in range(newY, y, -1):
-                if i < CELLS_Y and newGrid[i, x] == 0:
-                    newGrid[i, x] = newGrid[y, x]
-                    newGrid[y, x] = 0
-                    velocityGrid[i, x] = velocityGrid[y, x]
-                    velocityGrid[y, x] = 0
-                    colourGrid[i, x] = colourGrid[y, x]
-                    colourGrid[y, x] = 0
-                    break
-        # If can fall left
-        elif np.array_equal(roi[2], [0, 1, 1]) and x > 0:
-            newGrid[y+1, x-1] = newGrid[y, x]
-            newGrid[y, x] = 0
-            velocityGrid[y+1, x-1] = velocityGrid[y, x]
-            velocityGrid[y, x] = 0
-            colourGrid[y+1, x-1] = colourGrid[y, x]
-            colourGrid[y, x] = 0
-        # If can fall right
-        elif np.array_equal(roi[2], [1, 1, 0]) and x < CELLS_X - 1:
-            newGrid[y+1, x+1] = newGrid[y, x]
-            newGrid[y, x] = 0
-            velocityGrid[y+1, x+1] = velocityGrid[y, x]
-            velocityGrid[y, x] = 0
-            colourGrid[y+1, x+1] = colourGrid[y, x]
-            colourGrid[y, x] = 0
-        # Stochastic movement if the sand can move either left or right
-        elif np.array_equal(roi[2], [0, 1, 0]):
-            # If can't move right, move left
-            if x == CELLS_X - 1:
+        if y < self.CELLS_Y - 1:
+            if roi[2, 1] == 0:
+                # Fall as far as velocity allows
+                for i in range(newY, y, -1):
+                    if i < self.CELLS_Y and newGrid[i, x] == 0:
+                        newGrid[i, x] = newGrid[y, x]
+                        newGrid[y, x] = 0
+                        self.velocityGrid[i, x] = self.velocityGrid[y, x]
+                        self.velocityGrid[y, x] = 0
+                        self.colourGrid[i, x] = self.colourGrid[y, x]
+                        self.colourGrid[y, x] = 0
+                        break
+            # If can move left
+            elif np.array_equal(roi[2], [0, 1, 1]) and x > 0:
                 newGrid[y+1, x-1] = newGrid[y, x]
                 newGrid[y, x] = 0
-                velocityGrid[y+1, x-1] = velocityGrid[y, x]
-                velocityGrid[y, x] = 0
-                colourGrid[y+1, x-1] = colourGrid[y, x]
-                colourGrid[y, x] = 0
-            # If can't move left, move right
-            elif x == 0:
+                self.velocityGrid[y+1, x-1] = self.velocityGrid[y, x]
+                self.velocityGrid[y, x] = 0
+                self.colourGrid[y+1, x-1] = self.colourGrid[y, x]
+                self.colourGrid[y, x] = 0
+            # If can move right
+            elif np.array_equal(roi[2], [1, 1, 0]) and x < self.CELLS_X - 1:
                 newGrid[y+1, x+1] = newGrid[y, x]
                 newGrid[y, x] = 0
-                velocityGrid[y+1, x+1] = velocityGrid[y, x]
-                velocityGrid[y, x] = 0
-                colourGrid[y+1, x+1] = colourGrid[y, x]
-                colourGrid[y, x] = 0
-            # Otherwise, random direction
-            else:
-                direction = random.randint(0, 1)
-                # Move left
-                if direction == 0:
+                self.velocityGrid[y+1, x+1] = self.velocityGrid[y, x]
+                self.velocityGrid[y, x] = 0
+                self.colourGrid[y+1, x+1] = self.colourGrid[y, x]
+                self.colourGrid[y, x] = 0
+            # Stochastic movement if can move either direction
+            elif np.array_equal(roi[2], [0, 1, 0]):
+                # Cant move right, move left
+                if x == self.CELLS_X - 1:
                     newGrid[y+1, x-1] = newGrid[y, x]
                     newGrid[y, x] = 0
-                    velocityGrid[y+1, x-1] = velocityGrid[y, x]
-                    velocityGrid[y, x] = 0
-                    colourGrid[y+1, x-1] = colourGrid[y, x]
-                    colourGrid[y, x] = 0
-                # Move right
-                else:
+                    self.velocityGrid[y+1, x-1] = self.velocityGrid[y, x]
+                    self.velocityGrid[y, x] = 0
+                    self.colourGrid[y+1, x-1] = self.colourGrid[y, x]
+                    self.colourGrid[y, x] = 0
+                # Cant move left, move right
+                elif x == 0:
                     newGrid[y+1, x+1] = newGrid[y, x]
                     newGrid[y, x] = 0
-                    velocityGrid[y+1, x+1] = velocityGrid[y, x]
-                    velocityGrid[y, x] = 0
-                    colourGrid[y+1, x+1] = colourGrid[y, x]
-                    colourGrid[y, x] = 0
+                    self.velocityGrid[y+1, x+1] = self.velocityGrid[y, x]
+                    self.velocityGrid[y, x] = 0
+                    self.colourGrid[y+1, x+1] = self.colourGrid[y, x]
+                    self.colourGrid[y, x] = 0
+                else:
+                    direction = random.randint(0, 1)
+                    # Move left
+                    if direction == 0:
+                        newGrid[y+1, x-1] = newGrid[y, x]
+                        newGrid[y, x] = 0
+                        self.velocityGrid[y+1, x-1] = self.velocityGrid[y, x]
+                        self.velocityGrid[y, x] = 0
+                        self.colourGrid[y+1, x-1] = self.colourGrid[y, x]
+                        self.colourGrid[y, x] = 0
+                    # Move right
+                    else:
+                        newGrid[y+1, x+1] = newGrid[y, x]
+                        newGrid[y, x] = 0
+                        self.velocityGrid[y+1, x+1] = self.velocityGrid[y, x]
+                        self.velocityGrid[y, x] = 0
+                        self.colourGrid[y+1, x+1] = self.colourGrid[y, x]
+                        self.colourGrid[y, x] = 0
 
+        return newGrid
 
-    return newGrid
-
-def draw_pause_message(message):
-    pygame.draw.rect(screen, (0, 0, 0), (1010, 110, 1390, 150))
-    pauseText = fontMedium.render(message, True, (255, 255, 255))
-    pauseTextRect = pauseText.get_rect()
-    pauseTextRect.center = (1200, 150)
-    screen.blit(pauseText, pauseTextRect)
-    pygame.display.flip()
-
-def handle_events():
-    global running, leftMouseHeld, rightMouseHeld
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-            pygame.quit()
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                return True  # Pause or unpause the game
-            elif event.key == pygame.K_c:
-                clear_grid()
-            elif event.key == pygame.K_q:
-                running = False
-                pygame.quit()
-        
-        # Check for mouse button presses
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                leftMouseHeld = True
-            elif event.button == 3:
-                rightMouseHeld = True
-
-        # Check for mouse button releases
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:
-                leftMouseHeld = False
-            elif event.button == 3:
-                rightMouseHeld = False
-                
-    return False
-
-def clear_grid():
-    global grid, velocityGrid, colourGrid
-    grid.fill(0)
-    velocityGrid = np.zeros((CELLS_Y, CELLS_X, 2))
-    colourGrid.fill(0)
-
-    draw_grid()
-
-# Create menu title
-pygame.draw.line(screen, (255, 255, 255), (1000, 0), (1000, 1000), 2)
-title = fontLarge.render("Powder Toy", True, (255, 255, 255))
-titleRect = title.get_rect()
-titleRect.center = (TEXT_CENTRE, 50)
-screen.blit(title, titleRect)
-
-grid[(CELLS_Y//2)-50:(CELLS_Y//2)-20, 0:30] = 1
-
-# Main game loop
-def game_loop():
-    global running, grid, currentMaterial
-
-    # Tell user game is running
-    draw_pause_message("Game is Running")
-
-    # Basic game loop
-    while running:
-        # Polling key events
-        if handle_events():
-            running = False
-            break
-
-        # Update all cells
-        newGrid = np.copy(grid)
-        paddedGrid = np.pad(grid, pad_width=1, mode='constant', constant_values=0)
-        for i in range(1, CELLS_Y + 1):
-            for j in range(1, CELLS_X + 1):
+    # Handles movement of cells
+    def move_cells(self):
+        newGrid = self.grid.copy()
+        paddedGrid = np.pad(newGrid, pad_width=1, mode='constant', constant_values=0)
+        for i in range(1, self.CELLS_Y + 1):
+            for j in range(1, self.CELLS_X + 1):
                 # Get ROI, accounting for corners and edges
                 roi = paddedGrid[i-1:i+2, j-1:j+2]
 
                 # If sand
                 if roi[1, 1] == 1:
-                    newGrid = move_sand(i-1, j-1, roi, newGrid)
+                    newGrid = self.move_sand(i-1, j-1, roi, newGrid)
+        
+        self.grid = newGrid
 
-        grid = newGrid
+    # Handles input events
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                pygame.quit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    return True  # Pause or unpause the game
+                elif event.key == pygame.K_c:
+                    self.clear_grid()
+                elif event.key == pygame.K_q:
+                    self.running = False
+                    pygame.quit()
 
-        # Draw on grid if mouse is being held
-        if leftMouseHeld:
-            mouseX, mouseY = pygame.mouse.get_pos()
-            # If mouse is in bounds
-            if mouseX >= 0 and mouseX < GAMEWIDTH and mouseY >= 0 and mouseY < HEIGHT:
-                # Translate mouse position to corresponding grid position
-                cellX = mouseX // RESOLUTION
-                cellY = mouseY // RESOLUTION
-                grid[cellY, cellX] = currentMaterial
+            # Check for mouse button presses
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    self.leftMouseHeld = True
+                if event.button == 3:
+                    self.rightMouseHeld = True
+                    
+            # Check for mouse button releases
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    self.leftMouseHeld = False
+                if event.button == 3:
+                    self.rightMouseHeld = False
+        
+        return False
+    
+    # Handles mouse actions
+    def handle_mouse_input(self):
+        if self.leftMouseHeld:
+            x, y = pygame.mouse.get_pos()
+            cellX = x // self.RESOLUTION
+            cellY = y // self.RESOLUTION
+            if cellX < self.CELLS_X and cellY < self.CELLS_Y:
+                self.grid[cellY, cellX] = self.currentMaterial
 
-        # erase from grid if mouse is being held
-        if rightMouseHeld:
-            mouseX, mouseY = pygame.mouse.get_pos()
-            # If mouse is in bounds
-            if mouseX >= 0 and mouseX < GAMEWIDTH and mouseY >= 0 and mouseY < HEIGHT:
-                cellX = mouseX // RESOLUTION
-                cellY = mouseY // RESOLUTION
-                grid[cellY, cellX] = 0
-                velocityGrid[cellY, cellX, 0] = 0
-                velocityGrid[cellY, cellX, 1] = 0
-                colourGrid[cellY, cellX] = 0
+        if self.rightMouseHeld:
+            x, y = pygame.mouse.get_pos()
+            cellX = x // self.RESOLUTION
+            cellY = y // self.RESOLUTION
+            if cellX < self.CELLS_X and cellY < self.CELLS_Y:
+                self.grid[cellY, cellX] = 0
+                self.velocityGrid[cellY, cellX] = 0
 
+    def clear_grid(self):
+        self.grid.fill(0)
+        self.velocityGrid = np.zeros((self.CELLS_Y, self.CELLS_X, 2))
+        self.colourGrid.fill(0)
 
-        draw_grid()
+        self.draw_grid()
 
+    def draw_pause_message(self, message):
+        pygame.draw.rect(self.screen, (0, 0, 0), (1010, 110, 1390, 150))
+        pauseText = self.fontMedium.render(message, True, (255, 255, 255))
+        pauseTextRect = pauseText.get_rect()
+        pauseTextRect.center = (1200, 150)
+        self.screen.blit(pauseText, pauseTextRect)
         pygame.display.flip()
 
-        clock.tick(FPS)  # limits FPS to 60
+    def run(self):
+        self.draw_pause_message("Game is Running")
 
-    # If Game is paused
-    while not running:
+        while self.running:
 
-        # Tell user game is paused
-        draw_pause_message("Game is Paused")
+            if self.handle_events():
+                self.running = False
+                break
+            
+            self.move_cells()
+            self.handle_mouse_input()
+            self.draw_grid()
+            pygame.display.flip()
+            self.clock.tick(self.FPS)
 
-        # Polling key events
-        if handle_events():
-            running = True
-            game_loop()
+        while not self.running:
+            self.draw_pause_message("Game is Paused")
 
-        # Draw on grid if mouse is being held
-        if leftMouseHeld:
-            mouseX, mouseY = pygame.mouse.get_pos()
-            # If mouse is in bounds
-            if mouseX >= 0 and mouseX < GAMEWIDTH and mouseY >= 0 and mouseY < HEIGHT:
-                # Translate mouse position to corresponding grid position
-                cellX = mouseX // RESOLUTION
-                cellY = mouseY // RESOLUTION
-                grid[cellY, cellX] = currentMaterial
+            if self.handle_events():
+                self.running = True
+                self.run()
 
-        # erase from grid if mouse is being held
-        if rightMouseHeld:
-            mouseX, mouseY = pygame.mouse.get_pos()
-            # If mouse is in bounds
-            if mouseX >= 0 and mouseX < GAMEWIDTH and mouseY >= 0 and mouseY < HEIGHT:
-                cellX = mouseX // RESOLUTION
-                cellY = mouseY // RESOLUTION
-                grid[cellY, cellX] = 0
-                velocityGrid[cellY, cellX, 0] = 0
-                velocityGrid[cellY, cellX, 1] = 0
-                colourGrid[cellY, cellX] = 0
+            self.handle_mouse_input()
+            self.draw_grid()
+            pygame.display.flip()
+            self.clock.tick(self.FPS)
 
-        draw_grid()
 
-        pygame.display.flip()
-
-        clock.tick(FPS)  # limits FPS to 60
-
-game_loop()
+if __name__ == "__main__":
+    game = PowderToy()
+    game.run()
+    pygame.quit()
