@@ -18,6 +18,7 @@ This project is based on the game [Powder Toy](https://powdertoy.co.uk/)[^1], an
 4. [Customization](#customization)
 5. [Development](#development)
     - [21/08/24 - Adding basic controls and movement](#210824---adding-basic-controls-and-movement)
+    - [22/08/24 - Encapsulating functionality into classes](#220824---encapsulating-functionality-into-classes)
 6. [License](#license)
 7. [References](#references)
 
@@ -300,6 +301,27 @@ With these changes, the first version of the game was complete, and the game fun
 
 For the next step of development, I intend to add a basic fluid simulation, and will then test the combination of solid and liquid materials.
 
+<br>
+
+### 22/08/24 - Encapsulating functionality into classes
+
+In order to improve readability, maintainability, and ease of addition of new features, I have encapsulated the game into several classes. The main game now exists in a `PowderToy` class within `game.py`. This class contains the attributes that control the pygame window, as well as the main game loop. 
+
+The logic for particles now exists within the `particles` package. A superclass `Particle` exists to store the basic particle information. Currently, the only particle is sand, which also exists in its own `Sand` class within `particles/Sand.py`. Future particles will have their own classes and files, as with Sand. All functionality for a particle exists within its class. Currently, particle classes contain:
+
+- **Attributes:**
+    - **x:** The particle's x position within the game grid.
+    - **y:** The particle's y position within the game grid.
+    - **colour:** The particles colour in (r, g, b)
+    - **velocity:** The particles velocity, stored as a 2d vector of (y x)
+    - **NAME:** The name of the particle.
+    - **GRAVITY:** How much the particle is affected by gravity.
+    - **TERMINAL_VELOCITY:** The maximum speed a particle is allowed to fall.
+- **Methods:**
+    - **move:** Handles the movement logic for the particle. Will behave differently depending on the particle type.
+    - **draw:** Draws the particle
+ 
+As of writing this, the conversion from use of code in a single file and use of classes is not complete. I intended to replace the use of velocityGrid with just the velocity attribute, and intend to replace the draw function as written in the movement handling in the `PowderToy` class with a call to the particle's draw function.
 
 ---
 ## License
