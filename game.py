@@ -1,7 +1,9 @@
+from particles.Sand import *
 import numpy as np
 import random
 import pygame
 import math
+
 
 class PowderToy:
     def __init__(self):
@@ -16,11 +18,10 @@ class PowderToy:
         self.FPS = 30
 
         # Create grid to store game
-        self.grid = np.zeros((self.CELLS_Y, self.CELLS_X))
+        self.grid = np.zeros((self.CELLS_Y, self.CELLS_X), dtype=object)
         # Grid to store velocity, with components (y, x)
         self.velocityGrid = np.zeros((self.CELLS_Y, self.CELLS_X, 2))
-        # Grid to store colours in use
-        self.colourGrid = np.zeros((self.CELLS_Y, self.CELLS_X), dtype=object)
+    
 
         # Physics constants
         self.GRAVITY = 0.7
@@ -29,14 +30,7 @@ class PowderToy:
         # Setup for mouse controls
         self.leftMouseHeld = False
         self.rightMouseHeld = False
-        self.currentMaterial = 1
-
-        # Dictionary to hold colour values
-        self.colours = {
-            "0": [(0, 0, 0)],
-            # Sand
-            "1": [(117, 108, 30), (156, 113, 28), (181, 128, 22), (153, 126, 20), (140, 114, 13)]
-        }
+        self.currentMaterial = Sand
 
         # Perform initialisation for pygame
         pygame.init()
@@ -62,120 +56,27 @@ class PowderToy:
         self.screen.blit(title, titleRect)
 
         # Initialize grid with some sand
-        self.grid[(self.CELLS_Y // 2) - 50:(self.CELLS_Y // 2) - 20, 0:30] = 1
+        for i in range(20, 49):
+            for j in range(0, 29):
+                self.grid[i, j] = Sand(j, i)
 
     # Draws the grid
     def draw_grid(self):
+        pygame.draw.rect(self.screen, (0, 0, 0), (0, 0, self.GAMEWIDTH, self.HEIGHT))
         for i in range(self.CELLS_Y):
             for j in range(self.CELLS_X):
                 # Actual positions of the visible grid square
                 x = j * self.RESOLUTION
                 y = i * self.RESOLUTION
 
-                # Set colour if coloured flag is True
-                if self.colourGrid[i, j] == 0 and self.grid[i, j] != 0:
-                    colour = self.get_cell_colour(j, i)
-                elif self.colourGrid[i, j] != 0:
-                    colour = self.colourGrid[i, j]
-
-                if self.grid[i, j] == 1:
+                if self.grid[i, j] != 0:
                     # Draw at x and y + 1 with Resolution - 2 in order to not hide the grid lines
-                    pygame.draw.rect(self.screen, colour, (x, y, self.RESOLUTION, self.RESOLUTION))
-                    self.colourGrid[i, j] = colour
-                else:
-                    pygame.draw.rect(self.screen, (0, 0, 0), (x, y, self.RESOLUTION, self.RESOLUTION))
+                    pygame.draw.rect(self.screen, self.grid[i, j].colour, (x, y, self.RESOLUTION, self.RESOLUTION))
 
     # Gets the colour of the given cell
     def get_cell_colour(self, x, y):
         # Just return sand colour for now
         return random.choice(self.colours[str(int(self.grid[y, x]))])
-
-    # Used to move sand particles
-    def move_sand(self, y, x, roi, newGrid):
-        # If can't move
-        if np.array_equal(roi[2], [1, 1, 1]):
-            self.velocityGrid[y, x, 0] = 0
-            return newGrid  
-
-        # Update velocity (accelerate)
-        self.velocityGrid[y, x, 0] += self.GRAVITY
-
-        # Conform to terminal velocity
-        if self.velocityGrid[y, x, 0] > self.TERMINAL_VELOCITY:
-            self.velocityGrid[y, x, 0] = self.TERMINAL_VELOCITY
-
-        newY = y + int(self.velocityGrid[y, x, 0])
-
-        if newY >= self.CELLS_Y:
-            newY = self.CELLS_Y - 1
-
-        # If can fall straight down
-        if y < self.CELLS_Y - 1:
-            if roi[2, 1] == 0:
-                # Fall as far as velocity allows
-                for i in range(newY, y, -1):
-                    if i < self.CELLS_Y and newGrid[i, x] == 0:
-                        newGrid[i, x] = newGrid[y, x]
-                        newGrid[y, x] = 0
-                        self.velocityGrid[i, x] = self.velocityGrid[y, x]
-                        self.velocityGrid[y, x] = 0
-                        self.colourGrid[i, x] = self.colourGrid[y, x]
-                        self.colourGrid[y, x] = 0
-                        break
-            # If can move left
-            elif np.array_equal(roi[2], [0, 1, 1]) and x > 0:
-                newGrid[y+1, x-1] = newGrid[y, x]
-                newGrid[y, x] = 0
-                self.velocityGrid[y+1, x-1] = self.velocityGrid[y, x]
-                self.velocityGrid[y, x] = 0
-                self.colourGrid[y+1, x-1] = self.colourGrid[y, x]
-                self.colourGrid[y, x] = 0
-            # If can move right
-            elif np.array_equal(roi[2], [1, 1, 0]) and x < self.CELLS_X - 1:
-                newGrid[y+1, x+1] = newGrid[y, x]
-                newGrid[y, x] = 0
-                self.velocityGrid[y+1, x+1] = self.velocityGrid[y, x]
-                self.velocityGrid[y, x] = 0
-                self.colourGrid[y+1, x+1] = self.colourGrid[y, x]
-                self.colourGrid[y, x] = 0
-            # Stochastic movement if can move either direction
-            elif np.array_equal(roi[2], [0, 1, 0]):
-                # Cant move right, move left
-                if x == self.CELLS_X - 1:
-                    newGrid[y+1, x-1] = newGrid[y, x]
-                    newGrid[y, x] = 0
-                    self.velocityGrid[y+1, x-1] = self.velocityGrid[y, x]
-                    self.velocityGrid[y, x] = 0
-                    self.colourGrid[y+1, x-1] = self.colourGrid[y, x]
-                    self.colourGrid[y, x] = 0
-                # Cant move left, move right
-                elif x == 0:
-                    newGrid[y+1, x+1] = newGrid[y, x]
-                    newGrid[y, x] = 0
-                    self.velocityGrid[y+1, x+1] = self.velocityGrid[y, x]
-                    self.velocityGrid[y, x] = 0
-                    self.colourGrid[y+1, x+1] = self.colourGrid[y, x]
-                    self.colourGrid[y, x] = 0
-                else:
-                    direction = random.randint(0, 1)
-                    # Move left
-                    if direction == 0:
-                        newGrid[y+1, x-1] = newGrid[y, x]
-                        newGrid[y, x] = 0
-                        self.velocityGrid[y+1, x-1] = self.velocityGrid[y, x]
-                        self.velocityGrid[y, x] = 0
-                        self.colourGrid[y+1, x-1] = self.colourGrid[y, x]
-                        self.colourGrid[y, x] = 0
-                    # Move right
-                    else:
-                        newGrid[y+1, x+1] = newGrid[y, x]
-                        newGrid[y, x] = 0
-                        self.velocityGrid[y+1, x+1] = self.velocityGrid[y, x]
-                        self.velocityGrid[y, x] = 0
-                        self.colourGrid[y+1, x+1] = self.colourGrid[y, x]
-                        self.colourGrid[y, x] = 0
-
-        return newGrid
 
     # Handles movement of cells
     def move_cells(self):
@@ -186,9 +87,8 @@ class PowderToy:
                 # Get ROI, accounting for corners and edges
                 roi = paddedGrid[i-1:i+2, j-1:j+2]
 
-                # If sand
-                if roi[1, 1] == 1:
-                    newGrid = self.move_sand(i-1, j-1, roi, newGrid)
+                if roi[1, 1] != 0:
+                    newGrid, self.velocityGrid = roi[1, 1].move(newGrid, self.velocityGrid, i-1, j-1, roi)
         
         self.grid = newGrid
 
@@ -230,7 +130,7 @@ class PowderToy:
             cellX = x // self.RESOLUTION
             cellY = y // self.RESOLUTION
             if cellX < self.CELLS_X and cellY < self.CELLS_Y:
-                self.grid[cellY, cellX] = self.currentMaterial
+                self.grid[cellY, cellX] = self.currentMaterial(cellX, cellY)
 
         if self.rightMouseHeld:
             x, y = pygame.mouse.get_pos()
