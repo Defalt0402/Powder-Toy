@@ -15,23 +15,23 @@ class Sand(Particle):
         self.TERMINAL_VELOCITY = 5
 
     # Used to move sand particles
-    def move(self, newGrid, velocityGrid, y, x, roi):
+    def move(self, newGrid, y, x, roi):
         CELLS_Y = len(newGrid)
         CELLS_X = len(newGrid[0])
 
         # If can't move
         if np.all(roi[2] != 0):
-            velocityGrid[y, x, 0] = 0
-            return newGrid, velocityGrid  
+            self.velocity[0] = 0
+            return newGrid
 
         # Update velocity (accelerate)
-        velocityGrid[y, x, 0] += self.GRAVITY
+        self.velocity[0] += self.GRAVITY
 
         # Conform to terminal velocity
-        if velocityGrid[y, x, 0] > self.TERMINAL_VELOCITY:
-            velocityGrid[y, x, 0] = self.TERMINAL_VELOCITY
+        if self.velocity[0] > self.TERMINAL_VELOCITY:
+            self.velocity[0] = self.TERMINAL_VELOCITY
 
-        newY = y + int(velocityGrid[y, x, 0])
+        newY = y + int(self.velocity[0])
 
         if newY >= CELLS_Y:
             newY = CELLS_Y - 1
@@ -44,26 +44,20 @@ class Sand(Particle):
                     if i < CELLS_Y and newGrid[i, x] == 0:
                         newGrid[i, x] = newGrid[y, x]
                         newGrid[y, x] = 0
-                        velocityGrid[i, x] = velocityGrid[y, x]
-                        velocityGrid[y, x] = 0
                         self.y = i
-                        return newGrid, velocityGrid
+                        return newGrid
 
                 
             # If can move left
             elif roi[2, 0] == 0 and roi[2, 2] != 0 and x > 0:
                 newGrid[y+1, x-1] = newGrid[y, x]
                 newGrid[y, x] = 0
-                velocityGrid[y+1, x-1] = velocityGrid[y, x]
-                velocityGrid[y, x] = 0
                 self.y += 1
                 self.x -=1
             # If can move right
             elif roi[2, 2] == 0 and roi[2, 0] != 0 and x < CELLS_X - 1:
                 newGrid[y+1, x+1] = newGrid[y, x]
                 newGrid[y, x] = 0
-                velocityGrid[y+1, x+1] = velocityGrid[y, x]
-                velocityGrid[y, x] = 0
                 self.y += 1
                 self.x += 1
             # Stochastic movement if can move either direction
@@ -72,16 +66,12 @@ class Sand(Particle):
                 if x == CELLS_X - 1:
                     newGrid[y+1, x-1] = newGrid[y, x]
                     newGrid[y, x] = 0
-                    velocityGrid[y+1, x-1] = velocityGrid[y, x]
-                    velocityGrid[y, x] = 0
                     self.y += 1
                     self.x -= 1
                 # Cant move left, move right
                 elif x == 0:
                     newGrid[y+1, x+1] = newGrid[y, x]
                     newGrid[y, x] = 0
-                    velocityGrid[y+1, x+1] = velocityGrid[y, x]
-                    velocityGrid[y, x] = 0
                     self.y += 1
                     self.x += 1
                 else:
@@ -90,18 +80,14 @@ class Sand(Particle):
                     if direction == 0:
                         newGrid[y+1, x-1] = newGrid[y, x]
                         newGrid[y, x] = 0
-                        velocityGrid[y+1, x-1] = velocityGrid[y, x]
-                        velocityGrid[y, x] = 0
                         self.y += 1
                         self.x -= 1
                     # Move right
                     else:
                         newGrid[y+1, x+1] = newGrid[y, x]
                         newGrid[y, x] = 0
-                        velocityGrid[y+1, x+1] = velocityGrid[y, x]
-                        velocityGrid[y, x] = 0
                         self.y += 1
                         self.x += 1
 
-        return newGrid, velocityGrid
+        return newGrid
         

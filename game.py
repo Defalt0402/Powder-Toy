@@ -19,13 +19,6 @@ class PowderToy:
 
         # Create grid to store game
         self.grid = np.zeros((self.CELLS_Y, self.CELLS_X), dtype=object)
-        # Grid to store velocity, with components (y, x)
-        self.velocityGrid = np.zeros((self.CELLS_Y, self.CELLS_X, 2))
-    
-
-        # Physics constants
-        self.GRAVITY = 0.7
-        self.TERMINAL_VELOCITY = 3
 
         # Setup for mouse controls
         self.leftMouseHeld = False
@@ -71,7 +64,7 @@ class PowderToy:
 
                 if self.grid[i, j] != 0:
                     # Draw at x and y + 1 with Resolution - 2 in order to not hide the grid lines
-                    pygame.draw.rect(self.screen, self.grid[i, j].colour, (x, y, self.RESOLUTION, self.RESOLUTION))
+                    self.grid[i, j].draw(self.screen, self.RESOLUTION)
 
     # Gets the colour of the given cell
     def get_cell_colour(self, x, y):
@@ -88,7 +81,7 @@ class PowderToy:
                 roi = paddedGrid[i-1:i+2, j-1:j+2]
 
                 if roi[1, 1] != 0:
-                    newGrid, self.velocityGrid = roi[1, 1].move(newGrid, self.velocityGrid, i-1, j-1, roi)
+                    newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
         
         self.grid = newGrid
 
@@ -130,7 +123,8 @@ class PowderToy:
             cellX = x // self.RESOLUTION
             cellY = y // self.RESOLUTION
             if cellX < self.CELLS_X and cellY < self.CELLS_Y:
-                self.grid[cellY, cellX] = self.currentMaterial(cellX, cellY)
+                if self.grid[cellY, cellX] == 0:
+                    self.grid[cellY, cellX] = self.currentMaterial(cellX, cellY)
 
         if self.rightMouseHeld:
             x, y = pygame.mouse.get_pos()
@@ -138,12 +132,9 @@ class PowderToy:
             cellY = y // self.RESOLUTION
             if cellX < self.CELLS_X and cellY < self.CELLS_Y:
                 self.grid[cellY, cellX] = 0
-                self.velocityGrid[cellY, cellX] = 0
 
     def clear_grid(self):
         self.grid.fill(0)
-        self.velocityGrid = np.zeros((self.CELLS_Y, self.CELLS_X, 2))
-        self.colourGrid.fill(0)
 
         self.draw_grid()
 
