@@ -183,8 +183,6 @@ class PowderToy:
                         sand_count += 1
                     elif isinstance(cell, Water):
                         water_count += 1
-        
-            print(f"sand: {sand_count}, water:{water_count}")
 
             pygame.display.flip()
             self.clock.tick(self.FPS)
