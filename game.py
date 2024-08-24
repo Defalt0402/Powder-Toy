@@ -1,4 +1,5 @@
 from particles.Sand import *
+from particles.Water import *
 import numpy as np
 import random
 import pygame
@@ -53,6 +54,12 @@ class PowderToy:
             for j in range(0, 29):
                 self.grid[i, j] = Sand(j, i)
 
+        # Initialize grid with some sand
+        for i in range(20, 49):
+            for j in range(70, 99):
+                self.grid[i, j] = Water(j, i)
+
+
     # Draws the grid
     def draw_grid(self):
         pygame.draw.rect(self.screen, (0, 0, 0), (0, 0, self.GAMEWIDTH, self.HEIGHT))
@@ -76,12 +83,20 @@ class PowderToy:
         newGrid = self.grid.copy()
         paddedGrid = np.pad(newGrid, pad_width=1, mode='constant', constant_values=0)
         for i in range(1, self.CELLS_Y + 1):
-            for j in range(1, self.CELLS_X + 1):
-                # Get ROI, accounting for corners and edges
-                roi = paddedGrid[i-1:i+2, j-1:j+2]
+            if i % 2 == 0:
+                for j in range(1, self.CELLS_X + 1):
+                    # Get ROI, accounting for corners and edges
+                    roi = paddedGrid[i-1:i+2, j-1:j+2]
 
-                if roi[1, 1] != 0:
-                    newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
+                    if roi[1, 1] != 0:
+                        newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
+            else:
+                for j in range(self.CELLS_X, 0, -1):
+                    # Get ROI, accounting for corners and edges
+                    roi = paddedGrid[i-1:i+2, j-1:j+2]
+
+                    if roi[1, 1] != 0:
+                        newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
         
         self.grid = newGrid
 
@@ -158,6 +173,19 @@ class PowderToy:
             self.move_cells()
             self.handle_mouse_input()
             self.draw_grid()
+
+            sand_count = 0
+            water_count = 0
+            
+            for row in self.grid:
+                for cell in row:
+                    if isinstance(cell, Sand):
+                        sand_count += 1
+                    elif isinstance(cell, Water):
+                        water_count += 1
+        
+            print(f"sand: {sand_count}, water:{water_count}")
+
             pygame.display.flip()
             self.clock.tick(self.FPS)
 
@@ -172,6 +200,8 @@ class PowderToy:
             self.draw_grid()
             pygame.display.flip()
             self.clock.tick(self.FPS)
+
+        
 
 
 if __name__ == "__main__":
