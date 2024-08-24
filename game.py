@@ -122,7 +122,7 @@ class PowderToy:
             x, y = pygame.mouse.get_pos()
             cellX = x // self.RESOLUTION
             cellY = y // self.RESOLUTION
-            if cellX < self.CELLS_X and cellY < self.CELLS_Y:
+            if cellX < self.CELLS_X and cellX >= 0 and cellY < self.CELLS_Y and cellY >= 0:
                 if self.grid[cellY, cellX] == 0:
                     self.grid[cellY, cellX] = self.currentMaterial(cellX, cellY)
 
@@ -130,7 +130,7 @@ class PowderToy:
             x, y = pygame.mouse.get_pos()
             cellX = x // self.RESOLUTION
             cellY = y // self.RESOLUTION
-            if cellX < self.CELLS_X and cellY < self.CELLS_Y:
+            if cellX < self.CELLS_X and cellX >= 0 and cellY < self.CELLS_Y and cellY >= 0:
                 self.grid[cellY, cellX] = 0
 
     def clear_grid(self):
