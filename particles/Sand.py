@@ -50,44 +50,50 @@ class Sand(Particle):
                 
             # If can move left
             elif roi[2, 0] == 0 and roi[2, 2] != 0 and x > 0:
-                newGrid[y+1, x-1] = newGrid[y, x]
-                newGrid[y, x] = 0
-                self.y += 1
-                self.x -=1
-            # If can move right
-            elif roi[2, 2] == 0 and roi[2, 0] != 0 and x < CELLS_X - 1:
-                newGrid[y+1, x+1] = newGrid[y, x]
-                newGrid[y, x] = 0
-                self.y += 1
-                self.x += 1
-            # Stochastic movement if can move either direction
-            elif roi[2, 2] == 0 and roi[2, 0] == 0 :
-                # Cant move right, move left
-                if x == CELLS_X - 1:
+                if newGrid[y+1, x-1] == 0:
                     newGrid[y+1, x-1] = newGrid[y, x]
                     newGrid[y, x] = 0
                     self.y += 1
-                    self.x -= 1
-                # Cant move left, move right
-                elif x == 0:
+                    self.x -=1
+            # If can move right
+            elif roi[2, 2] == 0 and roi[2, 0] != 0 and x < CELLS_X - 1:
+                if newGrid[y+1, x+1] == 0:
                     newGrid[y+1, x+1] = newGrid[y, x]
                     newGrid[y, x] = 0
                     self.y += 1
                     self.x += 1
-                else:
-                    direction = random.randint(0, 1)
-                    # Move left
-                    if direction == 0:
+            # Stochastic movement if can move either direction
+            elif roi[2, 2] == 0 and roi[2, 0] == 0 :
+                # Cant move right, move left
+                if x == CELLS_X - 1:
+                    if newGrid[y+1, x-1] == 0:
                         newGrid[y+1, x-1] = newGrid[y, x]
                         newGrid[y, x] = 0
                         self.y += 1
                         self.x -= 1
-                    # Move right
-                    else:
+                # Cant move left, move right
+                elif x == 0:
+                    if newGrid[y+1, x+1] == 0:
                         newGrid[y+1, x+1] = newGrid[y, x]
                         newGrid[y, x] = 0
                         self.y += 1
                         self.x += 1
+                else:
+                    direction = random.randint(0, 1)
+                    # Move left
+                    if direction == 0:
+                        if newGrid[y+1, x-1] == 0:
+                            newGrid[y+1, x-1] = newGrid[y, x]
+                            newGrid[y, x] = 0
+                            self.y += 1
+                            self.x -= 1
+                    # Move right
+                    else:
+                        if newGrid[y+1, x+1] == 0:
+                            newGrid[y+1, x+1] = newGrid[y, x]
+                            newGrid[y, x] = 0
+                            self.y += 1
+                            self.x += 1
 
         return newGrid
         
