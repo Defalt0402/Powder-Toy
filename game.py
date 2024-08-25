@@ -26,7 +26,7 @@ class PowderToy:
         # Setup for mouse controls
         self.leftMouseHeld = False
         self.rightMouseHeld = False
-        self.currentMaterial = Water
+        self.currentMaterial = Sand
 
         # Perform initialisation for pygame
         pygame.init()
@@ -155,10 +155,15 @@ class PowderToy:
 
         if self.rightMouseHeld:
             x, y = pygame.mouse.get_pos()
-            cellX = x // self.RESOLUTION
-            cellY = y // self.RESOLUTION
-            if cellX < self.CELLS_X and cellX >= 0 and cellY < self.CELLS_Y and cellY >= 0:
-                self.grid[cellY, cellX] = 0
+            x = x // self.RESOLUTION
+            y = y // self.RESOLUTION
+            maxY = min(self.CELLS_Y, y + 3)
+            minY = max(0, y - 2)
+            maxX = min(self.CELLS_X, x + 3)
+            minX = max(0, x - 2)
+            for i in range(minY, maxY):
+                for j in range(minX, maxX):
+                    self.grid[i, j] = 0
 
     def clear_grid(self):
         self.grid.fill(0)
@@ -196,6 +201,8 @@ class PowderToy:
                         sand_count += 1
                     elif isinstance(cell, Water):
                         water_count += 1
+
+            print(f"sand: {sand_count}, water: {water_count}")
 
             pygame.display.flip()
             self.clock.tick(self.FPS)

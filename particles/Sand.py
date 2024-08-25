@@ -21,7 +21,7 @@ class Sand(Particle):
         CELLS_X = len(newGrid[0])
 
         # If can't move
-        if np.all(roi[2] != 0):
+        if np.all(roi[2] != 0) and roi[2, 0].LIQUID != True and roi[2, 1].LIQUID != True and roi[2, 2].LIQUID != True:
             self.velocity[0] = 0
             return newGrid
 
@@ -39,10 +39,19 @@ class Sand(Particle):
 
         # If can fall straight down
         if y < CELLS_Y - 1:
-            if roi[2, 1] == 0:
+            if roi[2, 1] == 0 or roi[2, 1].LIQUID == True:
                 # Fall as far as velocity allows
                 for i in range(newY, y, -1):
-                    if i < CELLS_Y and newGrid[i, x] == 0:
+                    if i < CELLS_Y and (newGrid[i, x] != 0):
+                        if newGrid[i, x].LIQUID == True:
+                            temp = newGrid[i, x]
+                            newGrid[i, x] = newGrid[y, x]
+                            newGrid[y, x] = 0
+                            newGrid[y, x] = temp
+                            self.y = i
+                            newGrid[y,x].y = y
+                            return newGrid
+                    elif i < CELLS_Y and newGrid[i, x] == 0:
                         newGrid[i, x] = newGrid[y, x]
                         newGrid[y, x] = 0
                         self.y = i
@@ -50,21 +59,38 @@ class Sand(Particle):
 
                 
             # If can move left
-            elif roi[2, 0] == 0 and roi[2, 2] != 0 and x > 0:
+           # If can move left
+            elif (roi[2, 0] == 0 or (roi[2, 0] != 0 and roi[2, 0].LIQUID == True)) and (roi[2, 2] != 0 and roi[2, 2].LIQUID != True) and x > 0:
                 if newGrid[y+1, x-1] == 0:
                     newGrid[y+1, x-1] = newGrid[y, x]
                     newGrid[y, x] = 0
                     self.y += 1
                     self.x -=1
+                else:
+                    temp = newGrid[y+1, x-1]
+                    newGrid[y+1, x-1] = newGrid[y, x]
+                    newGrid[y, x] = temp
+                    self.y += 1
+                    self.x -=1
+                    newGrid[y, x].y -= 1
+                    newGrid[y, x].x += 1
             # If can move right
-            elif roi[2, 2] == 0 and roi[2, 0] != 0 and x < CELLS_X - 1:
+            elif (roi[2, 2] == 0 or (roi[2, 2] != 0 and roi[2, 2].LIQUID == True)) and (roi[2, 0] != 0 and roi[2, 0].LIQUID != True) and x < CELLS_X - 1:
                 if newGrid[y+1, x+1] == 0:
                     newGrid[y+1, x+1] = newGrid[y, x]
                     newGrid[y, x] = 0
                     self.y += 1
                     self.x += 1
+                else:
+                    temp = newGrid[y+1, x+1]
+                    newGrid[y+1, x+1] = newGrid[y, x]
+                    newGrid[y, x] = temp
+                    self.y += 1
+                    self.x +=1
+                    newGrid[y, x].y -= 1
+                    newGrid[y, x].x -= 1
             # Stochastic movement if can move either direction
-            elif roi[2, 2] == 0 and roi[2, 0] == 0 :
+            elif (roi[2, 2] == 0 or (roi[2, 2] != 0 and roi[2, 2].LIQUID == True)) and (roi[2, 0] == 0 or (roi[2, 0] != 0 and roi[2, 0].LIQUID == True)):
                 # Cant move right, move left
                 if x == CELLS_X - 1:
                     if newGrid[y+1, x-1] == 0:
@@ -72,6 +98,14 @@ class Sand(Particle):
                         newGrid[y, x] = 0
                         self.y += 1
                         self.x -= 1
+                    else:
+                        temp = newGrid[y+1, x-1]
+                        newGrid[y+1, x-1] = newGrid[y, x]
+                        newGrid[y, x] = temp
+                        self.y += 1
+                        self.x -=1
+                        newGrid[y, x].y -= 1
+                        newGrid[y, x].x += 1
                 # Cant move left, move right
                 elif x == 0:
                     if newGrid[y+1, x+1] == 0:
@@ -79,6 +113,14 @@ class Sand(Particle):
                         newGrid[y, x] = 0
                         self.y += 1
                         self.x += 1
+                    else:
+                        temp = newGrid[y+1, x+1]
+                        newGrid[y+1, x+1] = newGrid[y, x]
+                        newGrid[y, x] = temp
+                        self.y += 1
+                        self.x +=1
+                        newGrid[y, x].y -= 1
+                        newGrid[y, x].x -= 1
                 else:
                     direction = random.randint(0, 1)
                     # Move left
@@ -88,6 +130,14 @@ class Sand(Particle):
                             newGrid[y, x] = 0
                             self.y += 1
                             self.x -= 1
+                        else:
+                            temp = newGrid[y+1, x-1]
+                            newGrid[y+1, x-1] = newGrid[y, x]
+                            newGrid[y, x] = temp
+                            self.y += 1
+                            self.x -=1
+                            newGrid[y, x].y -= 1
+                            newGrid[y, x].x += 1
                     # Move right
                     else:
                         if newGrid[y+1, x+1] == 0:
@@ -95,6 +145,14 @@ class Sand(Particle):
                             newGrid[y, x] = 0
                             self.y += 1
                             self.x += 1
+                        else:
+                            temp = newGrid[y+1, x+1]
+                            newGrid[y+1, x+1] = newGrid[y, x]
+                            newGrid[y, x] = temp
+                            self.y += 1
+                            self.x +=1
+                            newGrid[y, x].y -= 1
+                            newGrid[y, x].x -= 1
 
         return newGrid
         
