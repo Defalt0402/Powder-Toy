@@ -13,6 +13,8 @@ class Water(Particle):
         self.NAME = "Water"
         self.GRAVITY = 0.3
         self.TERMINAL_VELOCITY = 1
+        self.BUOYANCY = 1
+        self.LIQUID = True
 
     def get_water_level(self, roi):
         waterLevels = np.sum(roi != 0, axis=0)  # Sum of non-zero elements in each column
@@ -101,10 +103,7 @@ class Water(Particle):
                         self.y += 1
                         self.x += 1
 
-                # Move along its current height
-        
-        # return newGrid
-
+        # Move along its current height
         elif roi[1, 0] == 0 or roi[1, 2] == 0:
             # Water equalisation
             if CELLS_X - 1 - x <= 15:
@@ -132,8 +131,20 @@ class Water(Particle):
 
             # Direction - 0 = left, 1 = right, 2 = neither
             direction = random.randint(0, 2)
+            # Simulate water pressure, if free space left and water above, be pushed left
+            if roi[1, 0] == 0 and ((roi[0, 1] != 0 and roi[0,2] != 0) or roi[0,2] != 0) and x > 0:
+                if newGrid[y, x-1] == 0:
+                    newGrid[y, x-1] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                    self.x -= 1
+            # Simulate water pressure, if free space left and water above, be pushed left
+            elif roi[1, 2] == 0 and ((roi[0, 1] != 0 and roi[0,0] != 0) or roi[0,0] != 0) and x < CELLS_X - 1:
+                if newGrid[y, x+1] == 0:
+                    newGrid[y, x+1] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                    self.x += 1
             # If can only move left
-            if roi[1, 0] == 0 and roi[1, 2] != 0 and x > 0:
+            elif roi[1, 0] == 0 and roi[1, 2] != 0 and x > 0:
                 if equalDirection == 0:
                     if newGrid[y, x-1] == 0:
                         newGrid[y, x-1] = newGrid[y, x]
