@@ -84,6 +84,7 @@ class PowderToy:
     def move_cells(self, dir):
         newGrid = self.grid.copy()
         paddedGrid = np.pad(newGrid, pad_width=1, mode='constant', constant_values=0)
+        paddedGrid1 = np.copy(paddedGrid)
         if dir == 0: 
             rangeY = range(1, self.CELLS_Y + 1)
         else:
@@ -99,10 +100,10 @@ class PowderToy:
                 roi = paddedGrid[i-1:i+2, j-1:j+2]
 
                 if roi[1, 1] != 0:
-                    newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
+                    paddedGrid1 = roi[1, 1].move(paddedGrid, i, j, roi)
 
         
-        self.grid = newGrid
+        self.grid = paddedGrid[1:self.CELLS_Y + 1, 1:self.CELLS_X+1]
 
     # Handles input events
     def handle_events(self):
