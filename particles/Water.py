@@ -117,8 +117,8 @@ class Water(Particle):
             else: 
                 minX = x - 15
 
-            leftWaterRoi = newGrid[y-4:y+5, minX:x]
-            rightWaterRoi = newGrid[y-4:y+5, x:maxX]
+            leftWaterRoi = newGrid[y-4:CELLS_Y-1, minX:x]
+            rightWaterRoi = newGrid[y-4:CELLS_Y-1, x:maxX]
             leftLevel = self.get_water_level(leftWaterRoi)
             rightLevel = self.get_water_level(rightWaterRoi)
 
