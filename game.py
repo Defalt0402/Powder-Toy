@@ -16,15 +16,17 @@ class PowderToy:
         self.CELLS_X = self.GAMEWIDTH // self.RESOLUTION
         self.CELLS_Y = self.HEIGHT // self.RESOLUTION
         self.TEXT_CENTRE = self.GAMEWIDTH + ((self.WIDTH - self.GAMEWIDTH) // 2)
-        self.FPS = 30
+        self.FPS = 60
 
         # Create grid to store game
         self.grid = np.zeros((self.CELLS_Y, self.CELLS_X), dtype=object)
+        # Determines whether to iterate up or down
+        self.iterationDir = 0
 
         # Setup for mouse controls
         self.leftMouseHeld = False
         self.rightMouseHeld = False
-        self.currentMaterial = Sand
+        self.currentMaterial = Water
 
         # Perform initialisation for pygame
         pygame.init()
@@ -79,10 +81,14 @@ class PowderToy:
         return random.choice(self.colours[str(int(self.grid[y, x]))])
 
     # Handles movement of cells
-    def move_cells(self):
+    def move_cells(self, dir):
         newGrid = self.grid.copy()
         paddedGrid = np.pad(newGrid, pad_width=1, mode='constant', constant_values=0)
-        for i in range(1, self.CELLS_Y + 1):
+        if dir == 0: 
+            rangeY = range(1, self.CELLS_Y + 1)
+        else:
+            rangeY = range(self.CELLS_Y, 0, -1)
+        for i in rangeY:
             if i % 2 == 0:
                 for j in range(1, self.CELLS_X + 1):
                     # Get ROI, accounting for corners and edges
@@ -170,7 +176,8 @@ class PowderToy:
                 self.running = False
                 break
             
-            self.move_cells()
+            self.move_cells(self.iterationDir)
+            self.iterationDir = (self.iterationDir + 1) % 2
             self.handle_mouse_input()
             self.draw_grid()
 

@@ -13,6 +13,7 @@ class Sand(Particle):
         self.NAME = "Sand"
         self.GRAVITY = 0.7
         self.TERMINAL_VELOCITY = 5
+        self.BUOYANCY = 0
 
     # Used to move sand particles
     def move(self, newGrid, y, x, roi):
