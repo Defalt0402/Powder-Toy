@@ -141,11 +141,17 @@ class PowderToy:
     def handle_mouse_input(self):
         if self.leftMouseHeld:
             x, y = pygame.mouse.get_pos()
-            cellX = x // self.RESOLUTION
-            cellY = y // self.RESOLUTION
-            if cellX < self.CELLS_X and cellX >= 0 and cellY < self.CELLS_Y and cellY >= 0:
-                if self.grid[cellY, cellX] == 0:
-                    self.grid[cellY, cellX] = self.currentMaterial(cellX, cellY)
+            x = x // self.RESOLUTION
+            y = y // self.RESOLUTION
+            maxY = min(self.CELLS_Y - 1, y + 3)
+            minY = max(0, y - 2)
+            maxX = min(self.CELLS_X, x + 3)
+            minX = max(0, x - 2)
+            choices = [self.currentMaterial, 0]
+            for i in range(minY, maxY):
+                for j in range(minX, maxX):
+                    if self.grid[i, j] == 0 and random.choice(choices) != 0:
+                        self.grid[i, j] = self.currentMaterial(j, i)
 
         if self.rightMouseHeld:
             x, y = pygame.mouse.get_pos()
