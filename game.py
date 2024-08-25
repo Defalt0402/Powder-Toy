@@ -90,19 +90,17 @@ class PowderToy:
             rangeY = range(self.CELLS_Y, 0, -1)
         for i in rangeY:
             if i % 2 == 0:
-                for j in range(1, self.CELLS_X + 1):
-                    # Get ROI, accounting for corners and edges
-                    roi = paddedGrid[i-1:i+2, j-1:j+2]
-
-                    if roi[1, 1] != 0:
-                        newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
+                rangeX = range(1, self.CELLS_X + 1)
             else:
-                for j in range(self.CELLS_X, 0, -1):
-                    # Get ROI, accounting for corners and edges
-                    roi = paddedGrid[i-1:i+2, j-1:j+2]
+                rangeX = range(self.CELLS_X, 0, -1)
 
-                    if roi[1, 1] != 0:
-                        newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
+            for j in rangeX:
+                # Get ROI, accounting for corners and edges
+                roi = paddedGrid[i-1:i+2, j-1:j+2]
+
+                if roi[1, 1] != 0:
+                    newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
+
         
         self.grid = newGrid
 
