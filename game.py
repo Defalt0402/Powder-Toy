@@ -54,10 +54,10 @@ class PowderToy:
             for j in range(0, 29):
                 self.grid[i, j] = Sand(j, i)
 
-        # Initialize grid with some sand
-        for i in range(20, 49):
-            for j in range(70, 99):
-                self.grid[i, j] = Water(j, i)
+        # # Initialize grid with some sand
+        # for i in range(20, 49):
+        #     for j in range(70, 99):
+        #         self.grid[i, j] = Water(j, i)
 
 
     # Draws the grid
@@ -81,22 +81,17 @@ class PowderToy:
     # Handles movement of cells
     def move_cells(self):
         newGrid = self.grid.copy()
-        paddedGrid = np.pad(newGrid, pad_width=1, mode='constant', constant_values=0)
-        for i in range(self.CELLS_Y, 0, -1):
+        for i in range(self.CELLS_Y - 1, -1, -1):
+            # Get x iteration direction
             if i % 2 == 0:
-                for j in range(1, self.CELLS_X + 1):
-                    # Get ROI, accounting for corners and edges
-                    roi = paddedGrid[i-1:i+2, j-1:j+2]
-
-                    if roi[1, 1] != 0:
-                        newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
+                rangeJ = range(0, self.CELLS_X)
             else:
-                for j in range(self.CELLS_X, 0, -1):
-                    # Get ROI, accounting for corners and edges
-                    roi = paddedGrid[i-1:i+2, j-1:j+2]
+                rangeJ = range(self.CELLS_X - 1, -1, -1)
 
-                    if roi[1, 1] != 0:
-                        newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
+            for j in rangeJ:
+                if newGrid[i, j] != 0:
+                    newGrid = newGrid[i, j].move(newGrid, i, j)
+
         
         self.grid = newGrid
 
@@ -137,7 +132,7 @@ class PowderToy:
             x, y = pygame.mouse.get_pos()
             x = x // self.RESOLUTION
             y = y // self.RESOLUTION
-            maxY = min(self.CELLS_Y - 1, y + 3)
+            maxY = min(self.CELLS_Y, y + 3)
             minY = max(0, y - 2)
             maxX = min(self.CELLS_X, x + 3)
             minX = max(0, x - 2)
@@ -159,7 +154,7 @@ class PowderToy:
                 for j in range(minX, maxX):
                     self.grid[i, j] = 0
 
-                    
+
     def clear_grid(self):
         self.grid.fill(0)
 
