@@ -19,6 +19,7 @@ This project is based on the game [Powder Toy](https://powdertoy.co.uk/)[^1], an
 5. [Development](#development)
     - [21/08/24 - Adding basic controls and movement](#210824---adding-basic-controls-and-movement)
     - [22/08/24 - Encapsulating functionality into classes](#220824---encapsulating-functionality-into-classes)
+    - [27/08/24 - Adding water, and reworking the update system](270824---adding-water-and-reworking-the-update-system)
 6. [License](#license)
 7. [References](#references)
 
@@ -322,6 +323,286 @@ The logic for particles now exists within the `particles` package. A superclass 
     - **draw:** Draws the particle
  
 As of writing this, the conversion from use of code in a single file and use of classes is not complete. I intended to replace the use of velocityGrid with just the velocity attribute, and intend to replace the draw function as written in the movement handling in the `PowderToy` class with a call to the particle's draw function.
+
+<br>
+
+### 27/08/24 - Adding water, and reworking the update system
+
+The next step in development was attempting to add water. This was a major roadblock for me. I made several attempts to implement water, most of which ended with either inefficient code, broken code, or both. Initially, I attempted to extend the `move` function of `Sand` to accomodate the lateral motion of water. Whilst this code worked, it was slow and very hard to parse by eye. A lot of code was being rewritten in several places, and overall the implementation was not ideal. 
+
+By extending the new `Water` code to try to include water's natural tendency to level out, several new issues arose. When moving some particles, they would interact with other particles in such a way that the space it wanted to move into was occupied, but the particle did not see that, and thus the particle would delete the other particle from `self.grid`, but that particle would still interact and appear as a black square. After a lot of testing, I deemed this to be a problem caused by the `move_cells` function.
+
+Until this point, `move_cells` had copied the current grid, padded that grid to allow for a 3x3 Region of Interest (ROI) around every given pixel to be obtained, and then passed `roi`, `newGrid`, and the position of the particle to be moved into that particles `move` function. The move function would move the particle and any other particles that its movement interupted, then return the resulting new grid. The problem with this approach was that the ROI was always being taken from the `paddedGrid`, which remained unchanged throughout the execution of the loops. This meant that, when the ROI was found, it would often contain particles that had already been moved, and therefore would not have been in the ROI, or would not contain particles that should have been present. This caused problems, by setting multiple particles into a single position, deleting particles, and moving particles more than they should have. 
+
+```python
+ # Handles movement of cells
+    def move_cells(self):
+        newGrid = self.grid.copy()
+        paddedGrid = np.pad(newGrid, pad_width=1, mode='constant', constant_values=0)
+        for i in range(1, self.CELLS_Y + 1):
+            if i % 2 == 0:
+                for j in range(1, self.CELLS_X + 1):
+                    # Get ROI, accounting for corners and edges
+                    roi = paddedGrid[i-1:i+2, j-1:j+2]
+
+                    if roi[1, 1] != 0:
+                        newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
+            else:
+                for j in range(self.CELLS_X, 0, -1):
+                    # Get ROI, accounting for corners and edges
+                    roi = paddedGrid[i-1:i+2, j-1:j+2]
+
+                    if roi[1, 1] != 0:
+                        newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
+        
+        self.grid = newGrid
+```
+
+In order to fix this issue, I reworked the function overall. First, I removed `paddedGrid` and `roi` in favour of only using newGrid. This would ensure any updated would be noticed by future calls to `move`. Next, I changed the `y` iteration direction to by bottom up. As most particles will fall, this helped prevent some issues wherein particles would be updated multiple times. Finally, I updated the call to `move` to ensure it had the appropriate parametres, then set about updating the move functions themselves.
+
+```python
+# Handles movement of cells
+    def move_cells(self):
+        newGrid = self.grid.copy()
+        for i in range(self.CELLS_Y - 1, -1, -1):
+            # Get x iteration direction
+            if i % 2 == 0:
+                rangeJ = range(0, self.CELLS_X)
+            else:
+                rangeJ = range(self.CELLS_X - 1, -1, -1)
+
+            for j in rangeJ:
+                if newGrid[i, j] != 0:
+                    newGrid = newGrid[i, j].move(newGrid, i, j)
+
+        
+        self.grid = newGrid
+```
+
+Within `Sand`, I removed the old `move` code and began from the start. In place of an roi, I checked the positions into which a move may be possible, and set its respective flag to `True` to denote that that direction was possible. This has the benefit of speeding up execution, as boolean if statements are slightly faster than more verbose if statements. Each direction was then checked, and if a move was possible, it was made and the board state was returned. Initially sand was only allowed to move into an empty space, but I later updated it to allow sand to fall into water. 
+
+```python
+# Used to move sand particles
+    def move(self, newGrid, y, x):
+        CELLS_Y = len(newGrid)
+        CELLS_X = len(newGrid[0])
+
+        # Update velocity (accelerate)
+        self.velocity[0] += self.GRAVITY
+
+        # Conform to terminal velocity
+        if self.velocity[0] > self.TERMINAL_VELOCITY:
+            self.velocity[0] = self.TERMINAL_VELOCITY
+
+        newY = y + int(self.velocity[0])
+
+        if newY >= CELLS_Y:
+            newY = CELLS_Y - 1
+
+        # Chech each direction below the particle
+        b, bl, br = False, False, False
+        if y < CELLS_Y - 1:
+            if newGrid[y+1, x] == 0 or (newGrid[y+1, x] != 0 and newGrid[y+1, x].LIQUID):
+                b = True
+            if x > 0 and (newGrid[y+1, x-1] == 0 or (newGrid[y+1, x-1] != 0 and newGrid[y+1, x-1].LIQUID)):
+                bl = True
+            if x < CELLS_X - 1 and (newGrid[y+1, x+1] == 0 or (newGrid[y+1, x+1] != 0 and newGrid[y+1, x+1].LIQUID)):
+                br = True
+        else:
+            return newGrid
+        
+        # If can fall straight down
+        if b:
+            for i in range(newY, y, -1):
+                if newGrid[i, x] == 0:
+                    newGrid[i, x] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                    self.y = i
+                    return newGrid
+                if newGrid[i, x].LIQUID:
+                    temp = newGrid[i, x]
+                    newGrid[i, x] = newGrid[y, x]
+                    newGrid[y, x] = temp
+                    self.y = i
+                    newGrid[y, x].y = y
+                    return newGrid
+                
+        # If can only move left
+        if bl and not br:
+            if newGrid[y+1, x-1] == 0:
+                newGrid[y+1, x-1] = newGrid[y, x]
+                newGrid[y, x] = 0
+                self.y += 1
+                self.x -=1
+                return newGrid
+            else: 
+                temp = newGrid[y+1, x-1] 
+                newGrid[y+1, x-1] = newGrid[y, x]
+                newGrid[y, x] = temp
+                self.y += 1
+                self.x -=1
+                newGrid[y, x].y -= 1
+                newGrid[y, x].x += 1
+                return newGrid
+        # If can only move right
+        elif br and not bl:
+            if newGrid[y+1, x+1] == 0:
+                newGrid[y+1, x+1] = newGrid[y, x]
+                newGrid[y, x] = 0
+                self.y += 1
+                self.x +=1
+                return newGrid
+            else:
+                temp = newGrid[y+1, x+1] 
+                newGrid[y+1, x+1] = newGrid[y, x]
+                newGrid[y, x] = temp
+                self.y += 1
+                self.x +=1
+                newGrid[y, x].y -= 1
+                newGrid[y, x].x -= 1
+                return newGrid
+        # If can move either direction
+        # Random movement
+        elif br and bl:
+            direction = random.randint(0, 1)
+            # Move left
+            if direction == 0:
+                if newGrid[y+1, x-1] == 0:
+                    newGrid[y+1, x-1] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                    self.y += 1
+                    self.x -=1
+                    return newGrid
+                else: 
+                    temp = newGrid[y+1, x-1] 
+                    newGrid[y+1, x-1] = newGrid[y, x]
+                    newGrid[y, x] = temp
+                    self.y += 1
+                    self.x -=1
+                    newGrid[y, x].y -= 1
+                    newGrid[y, x].x += 1
+                    return newGrid
+            # Move right
+            else:
+                if newGrid[y+1, x+1] == 0:
+                    newGrid[y+1, x+1] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                    self.y += 1
+                    self.x +=1
+                    return newGrid
+                else:
+                    temp = newGrid[y+1, x+1] 
+                    newGrid[y+1, x+1] = newGrid[y, x]
+                    newGrid[y, x] = temp
+                    self.y += 1
+                    self.x +=1
+                    newGrid[y, x].y -= 1
+                    newGrid[y, x].x -= 1
+                    return newGrid
+        else:
+            return newGrid
+```
+
+Within `Water`, I transferred the Sand code, and then began experimenting with water leveling. Changing the y iteration direction had the benefit of allowing water to spread faster, and so further improvements were less important overall. In order to implement water leveling, I created a helper function that took a new ROI and returned the average number of particles in each column as a way to measure the water level. I created an ROI for each side of the particle being moved, so that a decision could be made on whether the particle should flow left or right in order to equalise the water levels.
+
+```python
+def get_water_level(self, roi):
+        waterLevels = np.sum(roi != 0, axis=0)  # Sum of non-zero elements in each column
+        if len(waterLevels) > 0:
+            return np.mean(waterLevels) 
+        else:
+            return 0
+```
+
+With the water levels obtained, if one was lower than the other, and the particle was able to move in that direction, all spaces up to a `spreadRange` number of spaces away from the particle were checked. If all spaces between the particle and the `spreadRange` away from the particle were empty, the particle would be moved to that space. This allowed the water to flow laterally after falling, allowing the water to quickly fit to the size of its container. Finally, the left and right sides of the water were checked. If either were free, the particle could move in that direction, which allowed small holes in the layer below it to be filled, as these small holes would not be easily filled by the equalising portion of code.
+
+```python
+else:
+            spreadRange = 5
+            # Water equalisation
+            maxX = min(CELLS_X - 1, x + 25)
+            minX = max(0, x - 25)
+
+            # Checks water level on each side of pixel
+            leftWaterRoi = newGrid[y-4:CELLS_Y-1, minX:x]
+            rightWaterRoi = newGrid[y-4:CELLS_Y-1, x:maxX]
+            leftLevel = self.get_water_level(leftWaterRoi)
+            rightLevel = self.get_water_level(rightWaterRoi)
+
+            # If water is lower on the left, and is lower than current particle
+            if l and leftLevel < rightLevel and leftLevel < (CELLS_Y - y) - 1:
+                for j in range(1, spreadRange + 1):
+                    # If reached edge of screen
+                    if x - j == -1:
+                        if newGrid[y, 0] == 0:
+                            newGrid[y, 0] = newGrid[y, x]
+                            newGrid[y, x] = 0
+                            self.x = 0
+                            return newGrid
+                        else:
+                            break
+                    # If reached edge of check
+                    elif newGrid[y, x - j] == 0 and j == spreadRange:
+                        newGrid[y, x - j] = newGrid[y, x]
+                        newGrid[y, x] = 0
+                        self.x -= j
+                        return newGrid
+            # If water is lower on the right and lowwer than current particle
+            elif r and rightLevel < leftLevel and rightLevel < (CELLS_Y - y) - 1:
+                for j in range(1, spreadRange +1):
+                    if x + j == CELLS_X:
+                        if newGrid[y, CELLS_X - 1] == 0:
+                            newGrid[y, CELLS_X - 1] = newGrid[y, x]
+                            newGrid[y, x] = 0
+                            self.x = CELLS_X - 1
+                            return newGrid
+                        else:
+                            break
+                    elif newGrid[y, x + j] == 0 and j == spreadRange:
+                        newGrid[y, x + j] = newGrid[y, x]
+                        newGrid[y, x] = 0
+                        self.x += j
+                        return newGrid
+            
+            # If can only move Left
+            if l and not r:
+                newGrid[y, x-1] = newGrid[y, x]
+                newGrid[y, x] = 0
+                self.x -=1
+                return newGrid
+            # If can only move right
+            elif r and not l:
+                newGrid[y, x+1] = newGrid[y, x]
+                newGrid[y, x] = 0
+                self.x +=1
+                return newGrid
+            # If can move Left or right
+            elif r and l:
+                # Random motion
+                direction = random.randint(0, 1)
+                # Move left
+                if direction == 0:
+                    newGrid[y, x-1] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                    self.x -=1
+                    return newGrid
+                # Move right
+                else:
+                    newGrid[y, x+1] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                    self.x +=1
+                    return newGrid
+                
+        return newGrid
+```
+
+Finally, I added the ability for water to be displaced by sand. This was a simple addition, achieved by checking if the space to be moved into was empty or a liquid, and then setting the particles position or swapping the two particles positions respectively.
+
+Below are example gifs showing the new functionality of water spreading and sand displacing water.
+
+![Water Leveling](gifs/water_leveling.gif)
+
+![Water Displacement](gifs/sand_falling_in_water.gif)
 
 ---
 ## License
