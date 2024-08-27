@@ -11,8 +11,8 @@ class Water(Particle):
         super().__init__(x, y, random.choice(colours))
         self.ID = 1
         self.NAME = "Water"
-        self.GRAVITY = 0.3
-        self.TERMINAL_VELOCITY = 1
+        self.GRAVITY = 0.25
+        self.TERMINAL_VELOCITY = 2
 
     def get_water_level(self, roi):
         waterLevels = np.sum(roi != 0, axis=0)  # Sum of non-zero elements in each column
@@ -94,72 +94,67 @@ class Water(Particle):
                 self.x +=1
                 return newGrid
         else:
-            # spreadRange = 2
-            # # Water equalisation
-            # maxX = min(CELLS_X - 1, x + 15)
-            # minX = max(0, x - 15)
+            spreadRange = 5
+            # Water equalisation
+            maxX = min(CELLS_X - 1, x + 25)
+            minX = max(0, x - 25)
 
-            # leftWaterRoi = newGrid[y-4:CELLS_Y-1, minX:x]
-            # rightWaterRoi = newGrid[y-4:CELLS_Y-1, x:maxX]
-            # leftLevel = self.get_water_level(leftWaterRoi)
-            # rightLevel = self.get_water_level(rightWaterRoi)
+            # Checks water level on each side of pixel
+            leftWaterRoi = newGrid[y-4:CELLS_Y-1, minX:x]
+            rightWaterRoi = newGrid[y-4:CELLS_Y-1, x:maxX]
+            leftLevel = self.get_water_level(leftWaterRoi)
+            rightLevel = self.get_water_level(rightWaterRoi)
 
-            # # If water is lower on the left, and is lower than current particle
-            # if leftLevel < rightLevel and leftLevel < y - 1:
-            #     for j in range(1, spreadRange +1):
-            #         # If as far as possible without problem
-            #         if x - j == -1 and newGrid[y, x - j + 1] == 0:
-            #             newGrid[y, x - j + 1] = newGrid[y, x]
-            #             newGrid[y, x] = 0
-            #             self.x -= (j + 1)
-            #             return newGrid
-            #         elif x + j == -1:
-            #             return newGrid
-            #         elif newGrid[y, x - j] == 0 and j == spreadRange:
-            #             newGrid[y, x - j] = newGrid[y, x]
-            #             newGrid[y, x] = 0
-            #             self.x -= j
-            #             return newGrid
-            #         # If reach obstacle, but free space before
-            #         elif newGrid[y, x - j] != 0 and newGrid[y, x - j + 1] == 0:
-            #             newGrid[y, x - j + 1] = newGrid[y, x]
-            #             newGrid[y, x] = 0
-            #             self.x -= (j + 1)
-            #             return newGrid
-            # # If water is lower on the right and lowwer than current particle
-            # elif rightLevel < leftLevel and rightLevel < y - 1:
-            #     for j in range(1, spreadRange +1):
-            #         # If as far as possible without problem
-            #         if x + j == CELLS_X and newGrid[y, x + j - 1] == 0:
-            #             newGrid[y, x + j - 1] = newGrid[y, x]
-            #             newGrid[y, x] = 0
-            #             self.x += j
-            #             return newGrid
-            #         elif x + j == CELLS_X:
-            #             return newGrid
-            #         elif newGrid[y, x + j] == 0 and j == spreadRange:
-            #             newGrid[y, x + j] = newGrid[y, x]
-            #             newGrid[y, x] = 0
-            #             self.x += j
-            #             return newGrid
-            #         # If reach obstacle, but free space before
-            #         elif newGrid[y, x + j] != 0 and newGrid[y, x + j - 1] == 0:
-            #             newGrid[y, x + j - 1] = newGrid[y, x]
-            #             newGrid[y, x] = 0
-            #             self.x += (j - 1)
-            #             return newGrid
+            # If water is lower on the left, and is lower than current particle
+            if l and leftLevel < rightLevel and leftLevel < (CELLS_Y - y) - 1:
+                for j in range(1, spreadRange + 1):
+                    # If reached edge of screen
+                    if x - j == -1:
+                        if newGrid[y, 0] == 0:
+                            newGrid[y, 0] = newGrid[y, x]
+                            newGrid[y, x] = 0
+                            self.x = 0
+                            return newGrid
+                        else:
+                            break
+                    # If reached edge of check
+                    elif newGrid[y, x - j] == 0 and j == spreadRange:
+                        newGrid[y, x - j] = newGrid[y, x]
+                        newGrid[y, x] = 0
+                        self.x -= j
+                        return newGrid
+            # If water is lower on the right and lowwer than current particle
+            elif r and rightLevel < leftLevel and rightLevel < (CELLS_Y - y) - 1:
+                for j in range(1, spreadRange +1):
+                    if x + j == CELLS_X:
+                        if newGrid[y, CELLS_X - 1] == 0:
+                            newGrid[y, CELLS_X - 1] = newGrid[y, x]
+                            newGrid[y, x] = 0
+                            self.x = CELLS_X - 1
+                            return newGrid
+                        else:
+                            break
+                    elif newGrid[y, x + j] == 0 and j == spreadRange:
+                        newGrid[y, x + j] = newGrid[y, x]
+                        newGrid[y, x] = 0
+                        self.x += j
+                        return newGrid
             
+            # If can only move Left
             if l and not r:
                 newGrid[y, x-1] = newGrid[y, x]
                 newGrid[y, x] = 0
                 self.x -=1
                 return newGrid
+            # If can only move right
             elif r and not l:
                 newGrid[y, x+1] = newGrid[y, x]
                 newGrid[y, x] = 0
                 self.x +=1
                 return newGrid
+            # If can move Left or right
             elif r and l:
+                # Random motion
                 direction = random.randint(0, 1)
                 # Move left
                 if direction == 0:

@@ -12,7 +12,7 @@ class PowderToy:
         self.GAMEWIDTH = 1000
         self.WIDTH = 1400
         self.HEIGHT = 1000
-        self.RESOLUTION = 10
+        self.RESOLUTION = 5
         self.CELLS_X = self.GAMEWIDTH // self.RESOLUTION
         self.CELLS_Y = self.HEIGHT // self.RESOLUTION
         self.TEXT_CENTRE = self.GAMEWIDTH + ((self.WIDTH - self.GAMEWIDTH) // 2)
@@ -184,14 +184,14 @@ class PowderToy:
             sand_count = 0
             water_count = 0
             
-            for row in self.grid:
-                for cell in row:
-                    if isinstance(cell, Sand):
-                        sand_count += 1
-                    elif isinstance(cell, Water):
-                        water_count += 1
+            # for row in self.grid:
+            #     for cell in row:
+            #         if isinstance(cell, Sand):
+            #             sand_count += 1
+            #         elif isinstance(cell, Water):
+            #             water_count += 1
 
-            print(f"sand_count {sand_count}, water_count {water_count}")
+            # print(f"sand_count {sand_count}, water_count {water_count}")
 
             pygame.display.flip()
             self.clock.tick(self.FPS)
