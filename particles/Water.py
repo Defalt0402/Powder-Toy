@@ -13,6 +13,7 @@ class Water(Particle):
         self.NAME = "Water"
         self.GRAVITY = 0.25
         self.TERMINAL_VELOCITY = 2
+        self.LIQUID = True
 
     def get_water_level(self, roi):
         waterLevels = np.sum(roi != 0, axis=0)  # Sum of non-zero elements in each column

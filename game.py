@@ -12,7 +12,7 @@ class PowderToy:
         self.GAMEWIDTH = 1000
         self.WIDTH = 1400
         self.HEIGHT = 1000
-        self.RESOLUTION = 5
+        self.RESOLUTION = 8
         self.CELLS_X = self.GAMEWIDTH // self.RESOLUTION
         self.CELLS_Y = self.HEIGHT // self.RESOLUTION
         self.TEXT_CENTRE = self.GAMEWIDTH + ((self.WIDTH - self.GAMEWIDTH) // 2)
@@ -24,7 +24,7 @@ class PowderToy:
         # Setup for mouse controls
         self.leftMouseHeld = False
         self.rightMouseHeld = False
-        self.currentMaterial = Water
+        self.currentMaterial = Sand
 
         # Perform initialisation for pygame
         pygame.init()

@@ -34,11 +34,11 @@ class Sand(Particle):
         # Chech each direction below the particle
         b, bl, br = False, False, False
         if y < CELLS_Y - 1:
-            if newGrid[y+1, x] == 0:
+            if newGrid[y+1, x] == 0 or (newGrid[y+1, x] != 0 and newGrid[y+1, x].LIQUID):
                 b = True
-            if x > 0 and newGrid[y+1, x-1] == 0:
+            if x > 0 and (newGrid[y+1, x-1] == 0 or (newGrid[y+1, x-1] != 0 and newGrid[y+1, x-1].LIQUID)):
                 bl = True
-            if x < CELLS_X - 1 and newGrid[y+1, x+1] == 0:
+            if x < CELLS_X - 1 and (newGrid[y+1, x+1] == 0 or (newGrid[y+1, x+1] != 0 and newGrid[y+1, x+1].LIQUID)):
                 br = True
         else:
             return newGrid
@@ -51,39 +51,86 @@ class Sand(Particle):
                     newGrid[y, x] = 0
                     self.y = i
                     return newGrid
-        
+                if newGrid[i, x].LIQUID:
+                    temp = newGrid[i, x]
+                    newGrid[i, x] = newGrid[y, x]
+                    newGrid[y, x] = temp
+                    self.y = i
+                    newGrid[y, x].y = y
+                    return newGrid
+                
         # If can only move left
         if bl and not br:
-            newGrid[y+1, x-1] = newGrid[y, x]
-            newGrid[y, x] = 0
-            self.y += 1
-            self.x -=1
-            return newGrid
+            if newGrid[y+1, x-1] == 0:
+                newGrid[y+1, x-1] = newGrid[y, x]
+                newGrid[y, x] = 0
+                self.y += 1
+                self.x -=1
+                return newGrid
+            else: 
+                temp = newGrid[y+1, x-1] 
+                newGrid[y+1, x-1] = newGrid[y, x]
+                newGrid[y, x] = temp
+                self.y += 1
+                self.x -=1
+                newGrid[y, x].y -= 1
+                newGrid[y, x].x += 1
+                return newGrid
         # If can only move right
         elif br and not bl:
-            newGrid[y+1, x+1] = newGrid[y, x]
-            newGrid[y, x] = 0
-            self.y += 1
-            self.x +=1
-            return newGrid
+            if newGrid[y+1, x+1] == 0:
+                newGrid[y+1, x+1] = newGrid[y, x]
+                newGrid[y, x] = 0
+                self.y += 1
+                self.x +=1
+                return newGrid
+            else:
+                temp = newGrid[y+1, x+1] 
+                newGrid[y+1, x+1] = newGrid[y, x]
+                newGrid[y, x] = temp
+                self.y += 1
+                self.x +=1
+                newGrid[y, x].y -= 1
+                newGrid[y, x].x -= 1
+                return newGrid
         # If can move either direction
         # Random movement
         elif br and bl:
             direction = random.randint(0, 1)
             # Move left
             if direction == 0:
-                newGrid[y+1, x-1] = newGrid[y, x]
-                newGrid[y, x] = 0
-                self.y += 1
-                self.x -=1
-                return newGrid
+                if newGrid[y+1, x-1] == 0:
+                    newGrid[y+1, x-1] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                    self.y += 1
+                    self.x -=1
+                    return newGrid
+                else: 
+                    temp = newGrid[y+1, x-1] 
+                    newGrid[y+1, x-1] = newGrid[y, x]
+                    newGrid[y, x] = temp
+                    self.y += 1
+                    self.x -=1
+                    newGrid[y, x].y -= 1
+                    newGrid[y, x].x += 1
+                    return newGrid
             # Move right
             else:
-                newGrid[y+1, x+1] = newGrid[y, x]
-                newGrid[y, x] = 0
-                self.y += 1
-                self.x +=1
-                return newGrid
+                if newGrid[y+1, x+1] == 0:
+                    newGrid[y+1, x+1] = newGrid[y, x]
+                    newGrid[y, x] = 0
+                    self.y += 1
+                    self.x +=1
+                    return newGrid
+                else:
+                    temp = newGrid[y+1, x+1] 
+                    newGrid[y+1, x+1] = newGrid[y, x]
+                    newGrid[y, x] = temp
+                    self.y += 1
+                    self.x +=1
+                    newGrid[y, x].y -= 1
+                    newGrid[y, x].x -= 1
+                    return newGrid
         else:
             return newGrid
         
