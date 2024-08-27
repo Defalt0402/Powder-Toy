@@ -16,12 +16,10 @@ class PowderToy:
         self.CELLS_X = self.GAMEWIDTH // self.RESOLUTION
         self.CELLS_Y = self.HEIGHT // self.RESOLUTION
         self.TEXT_CENTRE = self.GAMEWIDTH + ((self.WIDTH - self.GAMEWIDTH) // 2)
-        self.FPS = 60
+        self.FPS = 30
 
         # Create grid to store game
         self.grid = np.zeros((self.CELLS_Y, self.CELLS_X), dtype=object)
-        # Determines whether to iterate up or down
-        self.iterationDir = 0
 
         # Setup for mouse controls
         self.leftMouseHeld = False
@@ -81,29 +79,26 @@ class PowderToy:
         return random.choice(self.colours[str(int(self.grid[y, x]))])
 
     # Handles movement of cells
-    def move_cells(self, dir):
+    def move_cells(self):
         newGrid = self.grid.copy()
         paddedGrid = np.pad(newGrid, pad_width=1, mode='constant', constant_values=0)
-        paddedGrid1 = np.copy(paddedGrid)
-        if dir == 0: 
-            rangeY = range(1, self.CELLS_Y + 1)
-        else:
-            rangeY = range(self.CELLS_Y, 0, -1)
-        for i in rangeY:
+        for i in range(self.CELLS_Y, 0, -1):
             if i % 2 == 0:
-                rangeX = range(1, self.CELLS_X + 1)
+                for j in range(1, self.CELLS_X + 1):
+                    # Get ROI, accounting for corners and edges
+                    roi = paddedGrid[i-1:i+2, j-1:j+2]
+
+                    if roi[1, 1] != 0:
+                        newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
             else:
-                rangeX = range(self.CELLS_X, 0, -1)
+                for j in range(self.CELLS_X, 0, -1):
+                    # Get ROI, accounting for corners and edges
+                    roi = paddedGrid[i-1:i+2, j-1:j+2]
 
-            for j in rangeX:
-                # Get ROI, accounting for corners and edges
-                roi = paddedGrid[i-1:i+2, j-1:j+2]
-
-                if roi[1, 1] != 0:
-                    paddedGrid1 = roi[1, 1].move(paddedGrid, i, j, roi)
-
+                    if roi[1, 1] != 0:
+                        newGrid = roi[1, 1].move(newGrid, i-1, j-1, roi)
         
-        self.grid = paddedGrid[1:self.CELLS_Y + 1, 1:self.CELLS_X+1]
+        self.grid = newGrid
 
     # Handles input events
     def handle_events(self):
@@ -164,6 +159,7 @@ class PowderToy:
                 for j in range(minX, maxX):
                     self.grid[i, j] = 0
 
+                    
     def clear_grid(self):
         self.grid.fill(0)
 
@@ -186,8 +182,7 @@ class PowderToy:
                 self.running = False
                 break
             
-            self.move_cells(self.iterationDir)
-            self.iterationDir = (self.iterationDir + 1) % 2
+            self.move_cells()
             self.handle_mouse_input()
             self.draw_grid()
 
@@ -200,8 +195,6 @@ class PowderToy:
                         sand_count += 1
                     elif isinstance(cell, Water):
                         water_count += 1
-
-            print(f"sand: {sand_count}, water: {water_count}")
 
             pygame.display.flip()
             self.clock.tick(self.FPS)
