@@ -24,7 +24,7 @@ class PowderToy:
         # Setup for mouse controls
         self.leftMouseHeld = False
         self.rightMouseHeld = False
-        self.currentMaterial = Sand
+        self.currentMaterial = Water
 
         # Perform initialisation for pygame
         pygame.init()
@@ -54,10 +54,10 @@ class PowderToy:
             for j in range(0, 29):
                 self.grid[i, j] = Sand(j, i)
 
-        # # Initialize grid with some sand
-        # for i in range(20, 49):
-        #     for j in range(70, 99):
-        #         self.grid[i, j] = Water(j, i)
+        # Initialize grid with some sand
+        for i in range(20, 49):
+            for j in range(70, 99):
+                self.grid[i, j] = Water(j, i)
 
 
     # Draws the grid
@@ -190,6 +190,8 @@ class PowderToy:
                         sand_count += 1
                     elif isinstance(cell, Water):
                         water_count += 1
+
+            print(f"sand_count {sand_count}, water_count {water_count}")
 
             pygame.display.flip()
             self.clock.tick(self.FPS)
